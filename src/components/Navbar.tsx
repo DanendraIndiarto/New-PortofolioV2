@@ -45,7 +45,7 @@ export default function Navbar() {
             </div>
             <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-1 font-mono text-sm sm:text-base font-bold text-white tracking-tight">
-                <span>Danendra</span>
+                <span>Danendra Indiarto</span>
                 <span className="text-emerald-400">.dev</span>
               </div>
               <span className="hidden sm:inline-block text-[10px] text-slate-400 font-mono tracking-tight truncate">

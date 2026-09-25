@@ -12,8 +12,7 @@ import {
   Mail,
   GitBranch,
   ShieldCheck,
-  Code2,
-  Workflow
+  Code2
 } from "lucide-react";
 import { GithubIcon, LinkedinIcon, InstagramIcon, WhatsAppIcon } from "@/components/Icons";
 import { Profile } from "@/types";

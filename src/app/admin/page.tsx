@@ -5,28 +5,27 @@ import Link from "next/link";
 import Image from "next/image";
 import { 
   Shield, 
-  Terminal, 
   ArrowLeft, 
   User, 
   FolderGit2, 
   Award, 
   Upload, 
   Trash2, 
+  Pencil,
   Plus, 
   CheckCircle2, 
   AlertCircle, 
   ExternalLink, 
-  Key, 
   Database,
   Lock,
-  RefreshCw,
   Copy,
-  Eye
+  Eye,
+  X
 } from "lucide-react";
 import { 
   DEFAULT_PROFILE, 
   DEFAULT_PROJECTS, 
-  DEFAULT_CERTIFICATES,
+  DEFAULT_CERTIFICATES, 
   fetchProfile, 
   saveProfile, 
   fetchProjects, 
@@ -40,8 +39,13 @@ import { isSupabaseConfigured, uploadMedia } from "@/lib/supabase";
 import { Profile, Project, Certificate } from "@/types";
 
 export default function AdminPage() {
-  // Authentication PIN state
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Authentication PIN state - initialized lazily from sessionStorage
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("portfolio_admin_auth") === "true";
+    }
+    return false;
+  });
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState(false);
 
@@ -52,7 +56,10 @@ export default function AdminPage() {
   const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE);
   const [projects, setProjects] = useState<Project[]>(DEFAULT_PROJECTS);
   const [certificates, setCertificates] = useState<Certificate[]>(DEFAULT_CERTIFICATES);
-  const [loading, setLoading] = useState(true);
+
+  // Edit states for existing items
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [editingCertId, setEditingCertId] = useState<string | null>(null);
 
   // Notification feedback
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -87,14 +94,6 @@ export default function AdminPage() {
   });
   const [skillsInput, setSkillsInput] = useState("Node.js, RESTful API, MySQL, Linux Ubuntu");
 
-  // Check remembered session
-  useEffect(() => {
-    const sessionAuth = sessionStorage.getItem("portfolio_admin_auth");
-    if (sessionAuth === "true") {
-      setIsAuthenticated(true);
-    }
-  }, []);
-
   // Load live data
   useEffect(() => {
     async function loadAll() {
@@ -109,8 +108,6 @@ export default function AdminPage() {
         if (certs) setCertificates(certs);
       } catch (e) {
         console.error("Admin data load error:", e);
-      } finally {
-        setLoading(false);
       }
     }
 
@@ -187,7 +184,7 @@ export default function AdminPage() {
     }
   };
 
-  // Add Project
+  // Add or Update Project
   const handleAddProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProject.title || !newProject.description) {
@@ -200,8 +197,9 @@ export default function AdminPage() {
       .map((t) => t.trim())
       .filter(Boolean);
 
+    const isEdit = Boolean(editingProjectId);
     const projectData: Project = {
-      id: `proj-${Date.now()}`,
+      id: editingProjectId || `proj-${Date.now()}`,
       title: newProject.title || "",
       description: newProject.description || "",
       tech_stack: techArray.length > 0 ? techArray : ["Node.js", "Express"],
@@ -211,12 +209,19 @@ export default function AdminPage() {
       category: newProject.category || "Backend",
       featured: Boolean(newProject.featured),
       metrics: newProject.metrics || "",
-      created_at: new Date().toISOString(),
+      created_at: newProject.created_at || new Date().toISOString(),
     };
 
     const res = await saveProject(projectData);
     if (res.success) {
-      setProjects((prev) => [projectData, ...prev]);
+      if (isEdit) {
+        setProjects((prev) => prev.map((p) => (p.id === editingProjectId ? projectData : p)));
+        showFeedback("success", "Proyek berhasil diperbarui!");
+      } else {
+        setProjects((prev) => [projectData, ...prev]);
+        showFeedback("success", "Proyek baru berhasil ditambahkan!");
+      }
+      setEditingProjectId(null);
       setNewProject({
         title: "",
         description: "",
@@ -224,14 +229,37 @@ export default function AdminPage() {
         image_url: "",
         demo_url: "",
         github_url: "",
-        category: "Microservices & Distributed",
+        category: "Aplikasi Web",
         featured: false,
         metrics: "",
       });
-      showFeedback("success", "Proyek baru berhasil ditambahkan!");
+      setTechInput("Node.js, Express.js, MySQL, PM2");
     } else {
-      showFeedback("error", res.error || "Gagal menambahkan proyek.");
+      showFeedback("error", res.error || "Gagal menyimpan proyek.");
     }
+  };
+
+  const handleEditProject = (proj: Project) => {
+    setEditingProjectId(proj.id);
+    setNewProject({ ...proj });
+    setTechInput(proj.tech_stack ? proj.tech_stack.join(", ") : "");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleCancelEditProject = () => {
+    setEditingProjectId(null);
+    setNewProject({
+      title: "",
+      description: "",
+      tech_stack: [],
+      image_url: "",
+      demo_url: "",
+      github_url: "",
+      category: "Aplikasi Web",
+      featured: false,
+      metrics: "",
+    });
+    setTechInput("Node.js, Express.js, MySQL, PM2");
   };
 
   // Delete Project
@@ -240,6 +268,9 @@ export default function AdminPage() {
     const res = await removeProject(id);
     if (res.success) {
       setProjects((prev) => prev.filter((p) => p.id !== id));
+      if (editingProjectId === id) {
+        handleCancelEditProject();
+      }
       showFeedback("success", "Proyek berhasil dihapus.");
     } else {
       showFeedback("error", res.error || "Gagal menghapus proyek.");
@@ -265,7 +296,7 @@ export default function AdminPage() {
     }
   };
 
-  // Add Certificate
+  // Add or Update Certificate
   const handleAddCertificate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCert.title || !newCert.issuer) {
@@ -278,20 +309,28 @@ export default function AdminPage() {
       .map((s) => s.trim())
       .filter(Boolean);
 
+    const isEdit = Boolean(editingCertId);
     const certData: Certificate = {
-      id: `cert-${Date.now()}`,
+      id: editingCertId || `cert-${Date.now()}`,
       title: newCert.title || "",
       issuer: newCert.issuer || "",
       issue_date: newCert.issue_date || new Date().getFullYear().toString(),
       credential_url: newCert.credential_url || "",
       image_url: newCert.image_url || "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1000&q=80",
       skills: skillsArray,
-      created_at: new Date().toISOString(),
+      created_at: newCert.created_at || new Date().toISOString(),
     };
 
     const res = await saveCertificate(certData);
     if (res.success) {
-      setCertificates((prev) => [certData, ...prev]);
+      if (isEdit) {
+        setCertificates((prev) => prev.map((c) => (c.id === editingCertId ? certData : c)));
+        showFeedback("success", "Sertifikat berhasil diperbarui!");
+      } else {
+        setCertificates((prev) => [certData, ...prev]);
+        showFeedback("success", "Sertifikat baru berhasil ditambahkan!");
+      }
+      setEditingCertId(null);
       setNewCert({
         title: "",
         issuer: "",
@@ -300,10 +339,30 @@ export default function AdminPage() {
         image_url: "",
         skills: [],
       });
-      showFeedback("success", "Sertifikat baru berhasil ditambahkan!");
+      setSkillsInput("Node.js, RESTful API, MySQL, Linux Ubuntu");
     } else {
-      showFeedback("error", res.error || "Gagal menambahkan sertifikat.");
+      showFeedback("error", res.error || "Gagal menyimpan sertifikat.");
     }
+  };
+
+  const handleEditCertificate = (cert: Certificate) => {
+    setEditingCertId(cert.id);
+    setNewCert({ ...cert });
+    setSkillsInput(cert.skills ? cert.skills.join(", ") : "");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleCancelEditCertificate = () => {
+    setEditingCertId(null);
+    setNewCert({
+      title: "",
+      issuer: "",
+      issue_date: new Date().getFullYear().toString(),
+      credential_url: "",
+      image_url: "",
+      skills: [],
+    });
+    setSkillsInput("Node.js, RESTful API, MySQL, Linux Ubuntu");
   };
 
   // Delete Certificate
@@ -312,6 +371,9 @@ export default function AdminPage() {
     const res = await removeCertificate(id);
     if (res.success) {
       setCertificates((prev) => prev.filter((c) => c.id !== id));
+      if (editingCertId === id) {
+        handleCancelEditCertificate();
+      }
       showFeedback("success", "Sertifikat berhasil dihapus.");
     } else {
       showFeedback("error", res.error || "Gagal menghapus sertifikat.");
@@ -725,16 +787,36 @@ export default function AdminPage() {
         {activeTab === "projects" && (
           <div className="space-y-12">
             
-            {/* Form Tambah Proyek */}
+            {/* Form Tambah / Edit Proyek */}
             <form onSubmit={handleAddProject} className="glass-card rounded-2xl p-6 sm:p-8 border border-slate-800/80 space-y-5">
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                 <h3 className="text-base font-bold text-white font-mono flex items-center gap-2">
-                  <Plus className="w-4 h-4 text-emerald-400" />
-                  Tambah Proyek Portofolio Baru
+                  {editingProjectId ? (
+                    <>
+                      <Pencil className="w-4 h-4 text-amber-400" />
+                      <span>Edit Proyek: {newProject.title || editingProjectId}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4 text-emerald-400" />
+                      <span>Tambah Proyek Portofolio Baru</span>
+                    </>
+                  )}
                 </h3>
-                <span className="text-xs font-mono text-slate-400">
-                  Upload screenshot & simpan ke Supabase
-                </span>
+                {editingProjectId ? (
+                  <button
+                    type="button"
+                    onClick={handleCancelEditProject}
+                    className="inline-flex items-center gap-1 text-xs font-mono text-amber-400 hover:text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>Batal Edit</span>
+                  </button>
+                ) : (
+                  <span className="text-xs font-mono text-slate-400">
+                    Upload screenshot &amp; simpan ke Supabase
+                  </span>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -883,12 +965,23 @@ export default function AdminPage() {
                 </label>
               </div>
 
-              <button
-                type="submit"
-                className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/20"
-              >
-                + Simpan Proyek ke Portofolio
-              </button>
+              <div className="flex gap-3">
+                {editingProjectId && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEditProject}
+                    className="py-3 px-5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs transition-all"
+                  >
+                    Batal
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  className="flex-1 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/20"
+                >
+                  {editingProjectId ? "✓ Simpan Perubahan Proyek" : "+ Simpan Proyek ke Portofolio"}
+                </button>
+              </div>
             </form>
 
             {/* List Proyek Terdaftar */}
@@ -919,13 +1012,22 @@ export default function AdminPage() {
                         <h4 className="text-sm font-bold text-white truncate">
                           {proj.title}
                         </h4>
-                        <button
-                          onClick={() => handleDeleteProject(proj.id)}
-                          className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors"
-                          title="Hapus proyek"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleEditProject(proj)}
+                            className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors"
+                            title="Edit proyek"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteProject(proj.id)}
+                            className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors"
+                            title="Hapus proyek"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
 
                       <p className="text-xs text-slate-400 line-clamp-2 mt-1">
@@ -957,16 +1059,36 @@ export default function AdminPage() {
         {activeTab === "certificates" && (
           <div className="space-y-12">
             
-            {/* Form Tambah Sertifikat */}
+            {/* Form Tambah / Edit Sertifikat */}
             <form onSubmit={handleAddCertificate} className="glass-card rounded-2xl p-6 sm:p-8 border border-slate-800/80 space-y-5">
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                 <h3 className="text-base font-bold text-white font-mono flex items-center gap-2">
-                  <Plus className="w-4 h-4 text-emerald-400" />
-                  Tambah Sertifikat Baru
+                  {editingCertId ? (
+                    <>
+                      <Pencil className="w-4 h-4 text-amber-400" />
+                      <span>Edit Sertifikat: {newCert.title || editingCertId}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4 text-emerald-400" />
+                      <span>Tambah Sertifikat Baru</span>
+                    </>
+                  )}
                 </h3>
-                <span className="text-xs font-mono text-slate-400">
-                  Upload file/gambar sertifikat ke Supabase
-                </span>
+                {editingCertId ? (
+                  <button
+                    type="button"
+                    onClick={handleCancelEditCertificate}
+                    className="inline-flex items-center gap-1 text-xs font-mono text-amber-400 hover:text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>Batal Edit</span>
+                  </button>
+                ) : (
+                  <span className="text-xs font-mono text-slate-400">
+                    Upload file/gambar sertifikat ke Supabase
+                  </span>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1074,12 +1196,23 @@ export default function AdminPage() {
                 />
               </div>
 
-              <button
-                type="submit"
-                className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/20"
-              >
-                + Simpan Sertifikat ke Portofolio
-              </button>
+              <div className="flex gap-3">
+                {editingCertId && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEditCertificate}
+                    className="py-3 px-5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs transition-all"
+                  >
+                    Batal
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  className="flex-1 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/20"
+                >
+                  {editingCertId ? "✓ Simpan Perubahan Sertifikat" : "+ Simpan Sertifikat ke Portofolio"}
+                </button>
+              </div>
             </form>
 
             {/* List Sertifikat Aktif */}
@@ -1127,13 +1260,22 @@ export default function AdminPage() {
                         <span className="text-xs font-mono text-slate-500">No link</span>
                       )}
 
-                      <button
-                        onClick={() => handleDeleteCertificate(cert.id)}
-                        className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors"
-                        title="Hapus sertifikat"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleEditCertificate(cert)}
+                          className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors"
+                          title="Edit sertifikat"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCertificate(cert.id)}
+                          className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors"
+                          title="Hapus sertifikat"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}

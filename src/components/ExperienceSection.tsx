@@ -1,6 +1,6 @@
 "use client";
 
-import { Briefcase, Calendar, MapPin, CheckCircle2, ChevronRight } from "lucide-react";
+import { Briefcase, MapPin, CheckCircle2 } from "lucide-react";
 import { Experience } from "@/types";
 
 interface ExperienceSectionProps {

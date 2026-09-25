@@ -6,10 +6,7 @@ import {
   Mail, 
   MapPin, 
   CheckCircle2, 
-  AlertCircle, 
-  Clock, 
-  Sparkles,
-  MessageSquare
+  Clock 
 } from "lucide-react";
 import { GithubIcon, LinkedinIcon, InstagramIcon, WhatsAppIcon } from "@/components/Icons";
 import { Profile } from "@/types";
@@ -20,7 +17,6 @@ interface ContactSectionProps {
 
 export default function ContactSection({ profile }: ContactSectionProps) {
   const [formStatus, setFormStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
-  const [errorMessage, setErrorMessage] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -33,7 +29,6 @@ export default function ContactSection({ profile }: ContactSectionProps) {
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormStatus("submitting");
-    setErrorMessage("");
 
     try {
       const formEndpoint = profile.formspree_id && !profile.formspree_id.includes("your-form-id")
@@ -116,19 +111,19 @@ export default function ContactSection({ profile }: ContactSectionProps) {
 
                 {/* WhatsApp Quick Click */}
                 <a
-                  href={`https://wa.me/${cleanWaNumber || "6282334027274"}?text=Halo%20Danendra,%20saya%20tertarik%20berdiskusi%20tentang%20backend%20development`}
+                  href={`https://wa.me/${cleanWaNumber || "6282334027274"}?text=Halo%20${encodeURIComponent(profile.name || "Danendra")},%20saya%20tertarik%20berdiskusi%20tentang%20backend%20development`}
                   target="_blank"
                   rel="noreferrer"
                   className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-900/70 border border-slate-800/80 text-slate-300 hover:text-emerald-400 hover:border-emerald-500/40 transition-colors"
                 >
                   <WhatsAppIcon className="w-4 h-4 text-[#25D366] shrink-0" />
-                  <span>+62 823-3402-7274</span>
+                  <span>{profile.whatsapp_number ? (profile.whatsapp_number.startsWith("+") ? profile.whatsapp_number : `+${profile.whatsapp_number}`) : "+62 823-3402-7274"}</span>
                 </a>
 
                 {/* Location */}
                 <div className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-900/70 border border-slate-800/80 text-slate-300">
                   <MapPin className="w-4 h-4 text-teal-400 shrink-0" />
-                  <span>Malang, Jawa Timur, Indonesia</span>
+                  <span>{profile.location || "Malang, Jawa Timur, Indonesia"}</span>
                 </div>
 
                 {/* Working hours / Timezone */}

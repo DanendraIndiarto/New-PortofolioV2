@@ -18,13 +18,13 @@ import {
   fetchProjects,
   fetchCertificates
 } from "@/lib/data";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { Profile, Project, Certificate } from "@/types";
 
 export default function Home() {
   const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE);
   const [projects, setProjects] = useState<Project[]>(DEFAULT_PROJECTS);
   const [certificates, setCertificates] = useState<Certificate[]>(DEFAULT_CERTIFICATES);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
@@ -35,23 +35,60 @@ export default function Home() {
           fetchCertificates(),
         ]);
         if (profData) setProfile(profData);
-        if (projData && projData.length > 0) setProjects(projData);
-        if (certData && certData.length > 0) setCertificates(certData);
+        if (projData) setProjects(projData);
+        if (certData) setCertificates(certData);
       } catch (err) {
         console.error("Error loading portfolio data:", err);
-      } finally {
-        setLoading(false);
       }
     }
 
     loadData();
 
-    // Listen to local storage updates if changed in admin tab
-    const handleStorageChange = () => {
+    // 1. Listen to instant in-app update event (same window/tab)
+    const handleUpdate = () => {
       loadData();
     };
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    window.addEventListener("portfolio_updated", handleUpdate);
+
+    // 2. Listen to cross-tab storage changes
+    window.addEventListener("storage", handleUpdate);
+
+    // 3. Listen to live Supabase Realtime changes (cross-device & direct DB edits)
+    let channel: ReturnType<NonNullable<typeof supabase>["channel"]> | null = null;
+    if (isSupabaseConfigured && supabase) {
+      channel = supabase
+        .channel("portfolio-realtime-sync")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "profile" },
+          () => {
+            loadData();
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "projects" },
+          () => {
+            loadData();
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "certificates" },
+          () => {
+            loadData();
+          }
+        )
+        .subscribe();
+    }
+
+    return () => {
+      window.removeEventListener("portfolio_updated", handleUpdate);
+      window.removeEventListener("storage", handleUpdate);
+      if (channel && supabase) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, []);
 
   return (

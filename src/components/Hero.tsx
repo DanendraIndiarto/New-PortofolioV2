@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Database, Server, Terminal, Cpu, GitBranch, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Database, Server, Terminal, GitBranch } from "lucide-react";
 import { WhatsAppIcon } from "@/components/Icons";
 import { Profile } from "@/types";
 
@@ -36,7 +36,7 @@ export default function Hero({ profile }: HeroProps) {
               Membangun Solusi <span className="text-gradient-emerald">Backend &amp; Database MySQL</span> yang Efisien.
             </h1>
             <p className="text-slate-300 text-base sm:text-lg lg:text-xl font-normal leading-relaxed max-w-3xl mx-auto">
-              Halo, saya <span className="text-white font-semibold">{profile.name}</span>. Berfokus pada perancangan RESTful API yang efisien, pengelolaan database MySQL, serta manajemen server menggunakan Linux Ubuntu dan PM2.
+              Halo, saya <span className="text-white font-semibold">{profile.name}</span>. {profile.bio || "Berfokus pada perancangan RESTful API yang efisien, pengelolaan database MySQL, serta manajemen server menggunakan Linux Ubuntu dan PM2."}
             </p>
           </div>
 

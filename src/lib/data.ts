@@ -138,13 +138,16 @@ export async function fetchProfile(): Promise<Profile> {
         .from("profile")
         .select("*")
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (!error && data) {
         return {
           ...DEFAULT_PROFILE,
           ...data,
         };
+      }
+      if (error) {
+        console.warn("Supabase fetchProfile query note:", error.message);
       }
     } catch (e) {
       console.warn("Supabase fetchProfile error, using fallback:", e);
@@ -167,6 +170,7 @@ export async function fetchProfile(): Promise<Profile> {
 export async function saveProfile(profile: Profile): Promise<{ success: boolean; error?: string }> {
   if (typeof window !== "undefined") {
     localStorage.setItem("portfolio_profile", JSON.stringify(profile));
+    window.dispatchEvent(new Event("portfolio_updated"));
   }
 
   if (isSupabaseConfigured && supabase) {
@@ -210,8 +214,11 @@ export async function fetchProjects(): Promise<Project[]> {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
         return data;
+      }
+      if (error) {
+        console.warn("Supabase fetchProjects query note:", error.message);
       }
     } catch (e) {
       console.warn("Supabase fetchProjects error, using fallback:", e);
@@ -223,7 +230,7 @@ export async function fetchProjects(): Promise<Project[]> {
     if (local) {
       try {
         const parsed = JSON.parse(local);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       } catch {}
     }
   }
@@ -245,6 +252,7 @@ export async function saveProject(project: Project): Promise<{ success: boolean;
 
   if (typeof window !== "undefined") {
     localStorage.setItem("portfolio_projects", JSON.stringify(updatedList));
+    window.dispatchEvent(new Event("portfolio_updated"));
   }
 
   if (isSupabaseConfigured && supabase) {
@@ -267,6 +275,7 @@ export async function removeProject(id: string): Promise<{ success: boolean; err
 
   if (typeof window !== "undefined") {
     localStorage.setItem("portfolio_projects", JSON.stringify(updatedList));
+    window.dispatchEvent(new Event("portfolio_updated"));
   }
 
   if (isSupabaseConfigured && supabase) {
@@ -290,8 +299,11 @@ export async function fetchCertificates(): Promise<Certificate[]> {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
         return data;
+      }
+      if (error) {
+        console.warn("Supabase fetchCertificates query note:", error.message);
       }
     } catch (e) {
       console.warn("Supabase fetchCertificates error, using fallback:", e);
@@ -303,7 +315,7 @@ export async function fetchCertificates(): Promise<Certificate[]> {
     if (local) {
       try {
         const parsed = JSON.parse(local);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       } catch {}
     }
   }
@@ -325,6 +337,7 @@ export async function saveCertificate(cert: Certificate): Promise<{ success: boo
 
   if (typeof window !== "undefined") {
     localStorage.setItem("portfolio_certificates", JSON.stringify(updatedList));
+    window.dispatchEvent(new Event("portfolio_updated"));
   }
 
   if (isSupabaseConfigured && supabase) {
@@ -347,6 +360,7 @@ export async function removeCertificate(id: string): Promise<{ success: boolean;
 
   if (typeof window !== "undefined") {
     localStorage.setItem("portfolio_certificates", JSON.stringify(updatedList));
+    window.dispatchEvent(new Event("portfolio_updated"));
   }
 
   if (isSupabaseConfigured && supabase) {
@@ -361,3 +375,4 @@ export async function removeCertificate(id: string): Promise<{ success: boolean;
 
   return { success: true };
 }
+

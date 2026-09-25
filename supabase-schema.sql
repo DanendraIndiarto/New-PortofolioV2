@@ -4,8 +4,13 @@
 -- Jalankan skrip ini di SQL Editor pada Supabase Dashboard
 -- ==========================================================
 
+-- 0. HAPUS TABEL LAMA (Jika sebelumnya dibuat via GUI dengan tipe ID integer/bigint)
+DROP TABLE IF EXISTS public.profile CASCADE;
+DROP TABLE IF EXISTS public.projects CASCADE;
+DROP TABLE IF EXISTS public.certificates CASCADE;
+
 -- 1. TABEL PROFILE (Menyimpan foto avatar & data profil dinamis)
-CREATE TABLE IF NOT EXISTS public.profile (
+CREATE TABLE public.profile (
   id TEXT PRIMARY KEY DEFAULT 'main-profile',
   name TEXT NOT NULL,
   title TEXT NOT NULL,
@@ -24,7 +29,7 @@ CREATE TABLE IF NOT EXISTS public.profile (
 );
 
 -- 2. TABEL PROJECTS (Koleksi portofolio proyek backend & database)
-CREATE TABLE IF NOT EXISTS public.projects (
+CREATE TABLE public.projects (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
   description TEXT,
@@ -39,7 +44,7 @@ CREATE TABLE IF NOT EXISTS public.projects (
 );
 
 -- 3. TABEL CERTIFICATES (Koleksi sertifikat resmi)
-CREATE TABLE IF NOT EXISTS public.certificates (
+CREATE TABLE public.certificates (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
   issuer TEXT NOT NULL,
@@ -53,22 +58,33 @@ CREATE TABLE IF NOT EXISTS public.certificates (
 -- 4. BUCKET STORAGE UNTUK ASSET (Foto Avatar, Screenshot Proyek, File Sertifikat)
 INSERT INTO storage.buckets (id, name, public) 
 VALUES ('portfolio-assets', 'portfolio-assets', true)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET public = true;
 
 -- 5. ATURAN KEAMANAN & AKSES (RLS & Storage Policies)
 ALTER TABLE public.profile ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.certificates ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Allow public read profile" ON public.profile;
+DROP POLICY IF EXISTS "Allow all profile" ON public.profile;
 CREATE POLICY "Allow public read profile" ON public.profile FOR SELECT USING (true);
 CREATE POLICY "Allow all profile" ON public.profile FOR ALL USING (true);
 
+DROP POLICY IF EXISTS "Allow public read projects" ON public.projects;
+DROP POLICY IF EXISTS "Allow all projects" ON public.projects;
 CREATE POLICY "Allow public read projects" ON public.projects FOR SELECT USING (true);
 CREATE POLICY "Allow all projects" ON public.projects FOR ALL USING (true);
 
+DROP POLICY IF EXISTS "Allow public read certs" ON public.certificates;
+DROP POLICY IF EXISTS "Allow all certs" ON public.certificates;
 CREATE POLICY "Allow public read certs" ON public.certificates FOR SELECT USING (true);
 CREATE POLICY "Allow all certs" ON public.certificates FOR ALL USING (true);
 
+-- Storage bucket access policies
+DROP POLICY IF EXISTS "Public Read Access" ON storage.objects;
+DROP POLICY IF EXISTS "Public Insert Access" ON storage.objects;
+DROP POLICY IF EXISTS "Public Update Access" ON storage.objects;
+DROP POLICY IF EXISTS "Public Delete Access" ON storage.objects;
 CREATE POLICY "Public Read Access" ON storage.objects FOR SELECT USING (bucket_id = 'portfolio-assets');
 CREATE POLICY "Public Insert Access" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'portfolio-assets');
 CREATE POLICY "Public Update Access" ON storage.objects FOR UPDATE USING (bucket_id = 'portfolio-assets');
@@ -96,6 +112,7 @@ ON CONFLICT (id) DO UPDATE SET
   title = EXCLUDED.title,
   tagline = EXCLUDED.tagline,
   bio = EXCLUDED.bio,
+  avatar_url = EXCLUDED.avatar_url,
   location = EXCLUDED.location,
   whatsapp_number = EXCLUDED.whatsapp_number,
   updated_at = NOW();
@@ -179,3 +196,29 @@ VALUES
   ARRAY['Linux Ubuntu', 'PM2 Process Manager', 'CLI & Bash', 'Deployment']
 )
 ON CONFLICT (id) DO NOTHING;
+
+-- 7. AKTIFKAN SUPABASE REALTIME REPLICATION (Cross-Device Live Sync)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'profile'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.profile;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'projects'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.projects;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'certificates'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.certificates;
+  END IF;
+EXCEPTION WHEN OTHERS THEN
+  -- ignore if not permitted or publication doesn't exist
+  NULL;
+END $$;

@@ -111,10 +111,10 @@ export default function AboutSection({ profile }: AboutSectionProps) {
             <div className="absolute -top-20 -right-20 w-56 h-56 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none group-hover:bg-emerald-500/25 transition-all duration-500" />
 
             <div>
-              {/* Header with edit shortcut (Removed 'Supabase Dynamic Profile' label as requested) */}
+              {/* Header with edit shortcut */}
               <div className="flex items-center justify-between mb-6">
                 <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20">
-                  Junior Backend Developer
+                  {profile.title || "Junior Backend Developer"}
                 </span>
                 <Link
                   href="/admin"
@@ -130,8 +130,8 @@ export default function AboutSection({ profile }: AboutSectionProps) {
                   <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-2 border-emerald-500/40 p-1 bg-slate-900 shadow-xl group-hover/avatar:border-emerald-400 transition-all duration-300">
                     <div className="relative w-full h-full rounded-xl overflow-hidden bg-slate-800">
                       <Image
-                        src={avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80"}
-                        alt={profile.name}
+                        src={avatarUrl || profile.avatar_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80"}
+                        alt={profile.name || "Foto Profil"}
                         fill
                         className="object-cover group-hover/avatar:scale-105 transition-transform duration-500"
                         unoptimized
@@ -154,7 +154,7 @@ export default function AboutSection({ profile }: AboutSectionProps) {
                   </p>
                   <p className="text-xs text-slate-400 flex items-center justify-center sm:justify-start gap-1 pt-1 font-mono">
                     <MapPin className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Malang, Indonesia</span>
+                    <span>{profile.location || "Malang, Indonesia"}</span>
                   </p>
                   <p className="text-xs text-slate-400 flex items-center justify-center sm:justify-start gap-1 font-mono">
                     <Mail className="w-3.5 h-3.5 text-slate-500" />

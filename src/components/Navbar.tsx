@@ -3,8 +3,13 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Database, Shield, Menu, X, ArrowUpRight } from "lucide-react";
+import { Profile } from "@/types";
 
-export default function Navbar() {
+interface NavbarProps {
+  profile?: Profile;
+}
+
+export default function Navbar({ profile }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 

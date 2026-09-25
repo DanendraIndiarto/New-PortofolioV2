@@ -93,7 +93,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar />
+      <Navbar profile={profile} />
       <main className="flex-1">
         <Hero profile={profile} />
         <AboutSection profile={profile} />
@@ -102,7 +102,7 @@ export default function Home() {
         <CertificatesSection certificates={certificates} />
         <ContactSection profile={profile} />
       </main>
-      <Footer />
+      <Footer profile={profile} />
     </div>
   );
 }

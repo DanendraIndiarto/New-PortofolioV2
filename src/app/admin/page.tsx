@@ -36,7 +36,7 @@ import {
   saveCertificate, 
   removeCertificate 
 } from "@/lib/data";
-import { isSupabaseConfigured, uploadMedia } from "@/lib/supabase";
+import { isSupabaseConfigured, uploadMedia, testSupabaseConnection } from "@/lib/supabase";
 import { Profile, Project, Certificate } from "@/types";
 
 export default function AdminPage() {
@@ -65,10 +65,12 @@ export default function AdminPage() {
   // Notification feedback
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  // Uploading states
+  // Uploading & Saving states
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingProjectImg, setUploadingProjectImg] = useState(false);
   const [uploadingCertImg, setUploadingCertImg] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [testingDb, setTestingDb] = useState(false);
 
   // New Project Form State
   const [newProject, setNewProject] = useState<Partial<Project>>({
@@ -134,6 +136,19 @@ export default function AdminPage() {
     }
   };
 
+  const handleTestConnection = async () => {
+    setTestingDb(true);
+    try {
+      const res = await testSupabaseConnection();
+      showFeedback(
+        res.connected && res.tableProfileOk && res.storageOk ? "success" : "error",
+        res.message
+      );
+    } finally {
+      setTestingDb(false);
+    }
+  };
+
   // Avatar upload handler - uploads to Supabase Storage & automatically saves to database record
   const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -144,7 +159,7 @@ export default function AdminPage() {
       // 1. Upload to Supabase Storage bucket 'portfolio-assets' (folder: 'avatars')
       const { url, error } = await uploadMedia(file, "avatars");
       if (error || !url) {
-        showFeedback("error", error || "Gagal mengunggah foto profil ke Storage.");
+        showFeedback("error", error || "Gagal mengunggah foto profil ke Supabase Storage.");
         return;
       }
 
@@ -156,7 +171,7 @@ export default function AdminPage() {
       if (saveRes.success) {
         showFeedback(
           "success",
-          "Foto profil berhasil diunggah ke Storage dan otomatis disimpan ke database!"
+          "Foto profil berhasil diunggah ke Supabase Storage dan otomatis disimpan ke database cloud!"
         );
       } else {
         showFeedback(
@@ -177,11 +192,16 @@ export default function AdminPage() {
   // Save profile changes
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await saveProfile(profile);
-    if (res.success) {
-      showFeedback("success", "Profil & Foto berhasil diperbarui!");
-    } else {
-      showFeedback("error", res.error || "Gagal menyimpan profil.");
+    setSavingProfile(true);
+    try {
+      const res = await saveProfile(profile);
+      if (res.success) {
+        showFeedback("success", "Profil & Bio berhasil disimpan ke database Supabase!");
+      } else {
+        showFeedback("error", res.error || "Gagal menyimpan profil.");
+      }
+    } finally {
+      setSavingProfile(false);
     }
   };
 
@@ -492,7 +512,18 @@ export default function AdminPage() {
           </div>
 
           {/* Connection status indicator */}
-          <div className="flex items-center gap-3">
+          {/* Connection status indicator & diagnostic test */}
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={handleTestConnection}
+              disabled={testingDb}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 text-xs font-mono transition-colors"
+              title="Periksa koneksi tabel database dan storage Supabase"
+            >
+              <Database className="w-3.5 h-3.5 text-emerald-400" />
+              <span>{testingDb ? "Menguji..." : "Tes Koneksi Supabase"}</span>
+            </button>
+
             {isSupabaseConfigured ? (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-mono border border-emerald-500/30">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -504,7 +535,7 @@ export default function AdminPage() {
                 className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 text-xs font-mono border border-amber-500/30 hover:bg-amber-500/20 transition-colors"
               >
                 <AlertCircle className="w-3.5 h-3.5" />
-                <span>Mode Lokal (Klik Setup Supabase)</span>
+                <span>Belum Terhubung (Klik Setup)</span>
               </button>
             )}
 
@@ -523,6 +554,28 @@ export default function AdminPage() {
       {/* Main Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
         
+        {/* Unconfigured Alert Banner */}
+        {!isSupabaseConfigured && (
+          <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono space-y-2">
+            <div className="flex items-center gap-2 font-bold text-amber-400 text-sm">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>PERHATIAN: Database Supabase Cloud Belum Terhubung!</span>
+            </div>
+            <p className="text-slate-300 leading-relaxed">
+              File <code className="text-amber-200 px-1 py-0.5 bg-slate-900 rounded">.env.local</code> masih menggunakan kredensial placeholder (<code className="text-amber-200">your-project-id.supabase.co</code>).
+              Agar setiap kali mengedit data profil, bio, dan mengunggah foto langsung tersimpan permanen ke Supabase dan otomatis berubah di semua perangkat saat direfresh, silakan buka file <code className="text-amber-200">.env.local</code> di editor lalu masukkan <strong>NEXT_PUBLIC_SUPABASE_URL</strong> dan <strong>NEXT_PUBLIC_SUPABASE_ANON_KEY</strong> dari Dashboard Supabase Anda.
+            </p>
+            <div className="pt-1 flex items-center gap-4">
+              <button
+                onClick={() => setActiveTab("supabase-sql")}
+                className="text-emerald-400 hover:text-emerald-300 underline font-semibold flex items-center gap-1"
+              >
+                <span>Lihat Panduan Setup &amp; Skrip SQL Schema →</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Toast Notification */}
         {feedback && (
           <div
@@ -651,6 +704,7 @@ export default function AdminPage() {
                     />
                     <button
                       type="button"
+                      disabled={uploadingAvatar}
                       onClick={async () => {
                         if (!profile.avatar_url) {
                           showFeedback("error", "URL foto tidak boleh kosong.");
@@ -658,15 +712,15 @@ export default function AdminPage() {
                         }
                         const res = await updateProfileAvatar(profile.avatar_url);
                         if (res.success) {
-                          showFeedback("success", "URL foto profil berhasil disimpan ke database!");
+                          showFeedback("success", "URL foto profil berhasil disimpan ke database Supabase!");
                         } else {
-                          showFeedback("error", res.error || "Gagal menyimpan foto ke database.");
+                          showFeedback("error", res.error || "Gagal menyimpan foto ke database Supabase.");
                         }
                       }}
-                      className="w-full py-2 px-3 bg-slate-900 hover:bg-slate-850 text-emerald-400 border border-slate-800 hover:border-emerald-500/40 text-xs font-mono rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                      className="w-full py-2 px-3 bg-slate-900 hover:bg-slate-850 disabled:opacity-50 text-emerald-400 border border-slate-800 hover:border-emerald-500/40 text-xs font-mono rounded-lg transition-colors flex items-center justify-center gap-1.5"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Simpan URL Foto ke Database</span>
+                      <span>Simpan URL Foto ke Database Supabase</span>
                     </button>
                   </div>
                 </div>
@@ -711,6 +765,19 @@ export default function AdminPage() {
                       className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800 text-sm text-white focus:outline-none focus:border-emerald-500"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono text-slate-300 mb-1.5">
+                    Tagline / Sub-headline Hero:
+                  </label>
+                  <input
+                    type="text"
+                    value={profile.tagline || ""}
+                    onChange={(e) => setProfile({ ...profile, tagline: e.target.value })}
+                    placeholder="contoh: Junior Backend Developer & Database Management"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800 text-sm text-white focus:outline-none focus:border-emerald-500"
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -820,9 +887,11 @@ export default function AdminPage() {
 
                 <button
                   type="submit"
-                  className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/20"
+                  disabled={savingProfile}
+                  className="w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
                 >
-                  Simpan Perubahan Profil & Foto
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{savingProfile ? "Menyimpan ke Database Supabase..." : "Simpan Perubahan Profil & Bio ke Supabase"}</span>
                 </button>
               </form>
             </div>
@@ -1388,8 +1457,13 @@ export default function AdminPage() {
   );
 }
 
-const SUPABASE_SCHEMA_SQL = `-- 1. TABEL PROFILE
-CREATE TABLE IF NOT EXISTS public.profile (
+const SUPABASE_SCHEMA_SQL = `-- 0. HAPUS TABEL LAMA (Jika sebelumnya dibuat via GUI dengan tipe ID integer/bigint)
+DROP TABLE IF EXISTS public.profile CASCADE;
+DROP TABLE IF EXISTS public.projects CASCADE;
+DROP TABLE IF EXISTS public.certificates CASCADE;
+
+-- 1. TABEL PROFILE (Menyimpan foto avatar & data profil dinamis)
+CREATE TABLE public.profile (
   id TEXT PRIMARY KEY DEFAULT 'main-profile',
   name TEXT NOT NULL,
   title TEXT NOT NULL,
@@ -1408,7 +1482,7 @@ CREATE TABLE IF NOT EXISTS public.profile (
 );
 
 -- 2. TABEL PROJECTS
-CREATE TABLE IF NOT EXISTS public.projects (
+CREATE TABLE public.projects (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
   description TEXT,
@@ -1416,14 +1490,14 @@ CREATE TABLE IF NOT EXISTS public.projects (
   image_url TEXT,
   demo_url TEXT,
   github_url TEXT,
-  category TEXT DEFAULT 'Backend',
+  category TEXT DEFAULT 'Aplikasi Web',
   featured BOOLEAN DEFAULT FALSE,
   metrics TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- 3. TABEL CERTIFICATES
-CREATE TABLE IF NOT EXISTS public.certificates (
+CREATE TABLE public.certificates (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
   issuer TEXT NOT NULL,
@@ -1434,27 +1508,65 @@ CREATE TABLE IF NOT EXISTS public.certificates (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 4. STORAGE BUCKET UNTUK ASSETS
+-- 4. BUCKET STORAGE UNTUK ASSETS
 INSERT INTO storage.buckets (id, name, public) 
 VALUES ('portfolio-assets', 'portfolio-assets', true)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET public = true;
 
--- 5. PUBLIC ACCESS POLICIES
-CREATE POLICY "Public Read Access" ON storage.objects FOR SELECT USING (bucket_id = 'portfolio-assets');
-CREATE POLICY "Public Insert Access" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'portfolio-assets');
-CREATE POLICY "Public Update Access" ON storage.objects FOR UPDATE USING (bucket_id = 'portfolio-assets');
-
--- Enable RLS & open policy for portfolio tables
+-- 5. ATURAN KEAMANAN & AKSES (RLS & Storage Policies)
 ALTER TABLE public.profile ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.certificates ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Allow public read profile" ON public.profile;
+DROP POLICY IF EXISTS "Allow all profile" ON public.profile;
 CREATE POLICY "Allow public read profile" ON public.profile FOR SELECT USING (true);
 CREATE POLICY "Allow all profile" ON public.profile FOR ALL USING (true);
 
+DROP POLICY IF EXISTS "Allow public read projects" ON public.projects;
+DROP POLICY IF EXISTS "Allow all projects" ON public.projects;
 CREATE POLICY "Allow public read projects" ON public.projects FOR SELECT USING (true);
 CREATE POLICY "Allow all projects" ON public.projects FOR ALL USING (true);
 
+DROP POLICY IF EXISTS "Allow public read certs" ON public.certificates;
+DROP POLICY IF EXISTS "Allow all certs" ON public.certificates;
 CREATE POLICY "Allow public read certs" ON public.certificates FOR SELECT USING (true);
 CREATE POLICY "Allow all certs" ON public.certificates FOR ALL USING (true);
+
+-- Storage bucket access policies
+DROP POLICY IF EXISTS "Public Read Access" ON storage.objects;
+DROP POLICY IF EXISTS "Public Insert Access" ON storage.objects;
+DROP POLICY IF EXISTS "Public Update Access" ON storage.objects;
+DROP POLICY IF EXISTS "Public Delete Access" ON storage.objects;
+CREATE POLICY "Public Read Access" ON storage.objects FOR SELECT USING (bucket_id = 'portfolio-assets');
+CREATE POLICY "Public Insert Access" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'portfolio-assets');
+CREATE POLICY "Public Update Access" ON storage.objects FOR UPDATE USING (bucket_id = 'portfolio-assets');
+CREATE POLICY "Public Delete Access" ON storage.objects FOR DELETE USING (bucket_id = 'portfolio-assets');
+
+-- 6. DATA AWAL (SEED DATA BERDASARKAN CV DANENDRA)
+INSERT INTO public.profile (id, name, title, tagline, bio, avatar_url, resume_url, whatsapp_number, email, location, github_url, linkedin_url, instagram_url)
+VALUES (
+  'main-profile',
+  'Danendra Athallah Indiarto',
+  'Junior Backend Developer',
+  'Junior Backend Developer & Database Management',
+  'Halo, saya Danendra Athallah Indiarto. Berfokus pada perancangan RESTful API yang efisien, pengelolaan database MySQL, serta manajemen server menggunakan Linux Ubuntu dan PM2. Memiliki pengalaman dalam integrasi database relasional, otomasi deployment menggunakan GitHub Actions, dan pembuatan aplikasi web modern.',
+  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
+  '#contact',
+  '6282334027274',
+  'danendra.athallah@gmail.com',
+  'Malang, Indonesia',
+  'https://github.com',
+  'https://linkedin.com',
+  'https://instagram.com'
+)
+ON CONFLICT (id) DO UPDATE SET 
+  name = EXCLUDED.name,
+  title = EXCLUDED.title,
+  tagline = EXCLUDED.tagline,
+  bio = EXCLUDED.bio,
+  avatar_url = EXCLUDED.avatar_url,
+  location = EXCLUDED.location,
+  whatsapp_number = EXCLUDED.whatsapp_number,
+  updated_at = NOW();
 `;

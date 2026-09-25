@@ -129,14 +129,22 @@ export const DEFAULT_CERTIFICATES: Certificate[] = [
   },
 ];
 
-// Helper functions that safely query Supabase or fallback to client storage/defaults
+// Database-first functions that query and persist 100% to Supabase
 
 export async function fetchProfile(): Promise<Profile> {
+  // Clear any legacy localStorage to ensure clean dynamic data flow from Supabase
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.removeItem("portfolio_profile");
+    } catch {}
+  }
+
   if (isSupabaseConfigured && supabase) {
     try {
       const { data, error } = await supabase
         .from("profile")
         .select("*")
+        .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -146,21 +154,22 @@ export async function fetchProfile(): Promise<Profile> {
           ...data,
         };
       }
+
+      // If connected but no profile row exists yet, seed initial row into Supabase!
+      if (!error && !data) {
+        const { error: seedError } = await supabase
+          .from("profile")
+          .upsert(DEFAULT_PROFILE, { onConflict: "id" });
+        if (!seedError) {
+          return DEFAULT_PROFILE;
+        }
+      }
+
       if (error) {
-        console.warn("Supabase fetchProfile query note:", error.message);
+        console.warn("Supabase fetchProfile note:", error.message);
       }
     } catch (e) {
-      console.warn("Supabase fetchProfile error, using fallback:", e);
-    }
-  }
-
-  // LocalStorage check for preview edits without DB
-  if (typeof window !== "undefined") {
-    const local = localStorage.getItem("portfolio_profile");
-    if (local) {
-      try {
-        return { ...DEFAULT_PROFILE, ...JSON.parse(local) };
-      } catch {}
+      console.error("Supabase fetchProfile error:", e);
     }
   }
 
@@ -168,113 +177,122 @@ export async function fetchProfile(): Promise<Profile> {
 }
 
 export async function saveProfile(profile: Profile): Promise<{ success: boolean; error?: string }> {
-  if (typeof window !== "undefined") {
-    localStorage.setItem("portfolio_profile", JSON.stringify(profile));
-    window.dispatchEvent(new Event("portfolio_updated"));
+  if (!isSupabaseConfigured || !supabase) {
+    return {
+      success: false,
+      error:
+        "Supabase belum terhubung! Silakan isi NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY di file .env.local agar data tersimpan permanen ke cloud database.",
+    };
   }
 
-  if (isSupabaseConfigured && supabase) {
-    try {
-      const profileId = profile.id || "main-profile";
-      const { error } = await supabase.from("profile").upsert(
-        {
-          id: profileId,
-          name: profile.name || DEFAULT_PROFILE.name,
-          title: profile.title || DEFAULT_PROFILE.title,
-          tagline: profile.tagline || DEFAULT_PROFILE.tagline,
-          bio: profile.bio || DEFAULT_PROFILE.bio,
-          avatar_url: profile.avatar_url,
-          resume_url: profile.resume_url || DEFAULT_PROFILE.resume_url,
-          whatsapp_number: profile.whatsapp_number || DEFAULT_PROFILE.whatsapp_number,
-          email: profile.email || DEFAULT_PROFILE.email,
-          location: profile.location || DEFAULT_PROFILE.location,
-          github_url: profile.github_url || DEFAULT_PROFILE.github_url,
-          linkedin_url: profile.linkedin_url || DEFAULT_PROFILE.linkedin_url,
-          instagram_url: profile.instagram_url || DEFAULT_PROFILE.instagram_url,
-          formspree_id: profile.formspree_id || DEFAULT_PROFILE.formspree_id,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "id" }
-      );
+  try {
+    // 1. Fetch current record id to maintain single canonical profile
+    const { data: existing } = await supabase
+      .from("profile")
+      .select("id")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-      if (error) {
-        return { success: false, error: error.message };
-      }
-      return { success: true };
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Gagal menyimpan ke Supabase";
-      return { success: false, error: msg };
+    const profileId = existing?.id || profile.id || "main-profile";
+
+    const payload = {
+      id: profileId,
+      name: profile.name || DEFAULT_PROFILE.name,
+      title: profile.title || DEFAULT_PROFILE.title,
+      tagline: profile.tagline || DEFAULT_PROFILE.tagline,
+      bio: profile.bio || DEFAULT_PROFILE.bio,
+      avatar_url: profile.avatar_url || DEFAULT_PROFILE.avatar_url,
+      resume_url: profile.resume_url || DEFAULT_PROFILE.resume_url,
+      whatsapp_number: profile.whatsapp_number || DEFAULT_PROFILE.whatsapp_number,
+      email: profile.email || DEFAULT_PROFILE.email,
+      location: profile.location || DEFAULT_PROFILE.location,
+      github_url: profile.github_url || DEFAULT_PROFILE.github_url,
+      linkedin_url: profile.linkedin_url || DEFAULT_PROFILE.linkedin_url,
+      instagram_url: profile.instagram_url || DEFAULT_PROFILE.instagram_url,
+      formspree_id: profile.formspree_id || DEFAULT_PROFILE.formspree_id,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase
+      .from("profile")
+      .upsert(payload, { onConflict: "id" });
+
+    if (error) {
+      console.error("Supabase saveProfile error:", error);
+      return { success: false, error: `Supabase Error: ${error.message}` };
     }
-  }
 
-  return { success: true };
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("portfolio_profile");
+      window.dispatchEvent(new Event("portfolio_updated"));
+    }
+
+    return { success: true };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Gagal menyimpan ke Supabase";
+    return { success: false, error: msg };
+  }
 }
 
 /**
- * Directly updates the avatar_url in the database table 'profile' (and localStorage).
- * This ensures that whenever a photo is uploaded to Supabase Storage, the database record
- * is immediately updated with the public URL without waiting for full form submission.
+ * Directly updates the avatar_url in the database table 'profile'.
+ * Ensures that whenever a photo is uploaded to Supabase Storage, the database record
+ * is immediately updated with the public URL and synced across all devices.
  */
 export async function updateProfileAvatar(avatarUrl: string): Promise<{ success: boolean; error?: string }> {
-  if (typeof window !== "undefined") {
-    const local = localStorage.getItem("portfolio_profile");
-    let current: Profile = DEFAULT_PROFILE;
-    if (local) {
-      try {
-        current = { ...DEFAULT_PROFILE, ...JSON.parse(local) };
-      } catch {}
-    }
-    current.avatar_url = avatarUrl;
-    localStorage.setItem("portfolio_profile", JSON.stringify(current));
-    window.dispatchEvent(new Event("portfolio_updated"));
+  if (!isSupabaseConfigured || !supabase) {
+    return {
+      success: false,
+      error:
+        "Supabase belum terhubung! Silakan isi NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY di file .env.local agar foto tersimpan permanen ke cloud database.",
+    };
   }
 
-  if (isSupabaseConfigured && supabase) {
-    try {
-      const { data: existing } = await supabase
-        .from("profile")
-        .select("id")
-        .limit(1)
-        .maybeSingle();
+  try {
+    const { data: existing } = await supabase
+      .from("profile")
+      .select("*")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-      const targetId = existing?.id || "main-profile";
+    const targetId = existing?.id || "main-profile";
+    const payload = {
+      ...(existing || DEFAULT_PROFILE),
+      id: targetId,
+      avatar_url: avatarUrl,
+      updated_at: new Date().toISOString(),
+    };
 
-      const { error: updateError } = await supabase
-        .from("profile")
-        .update({
-          avatar_url: avatarUrl,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", targetId);
+    const { error: upsertError } = await supabase
+      .from("profile")
+      .upsert(payload, { onConflict: "id" });
 
-      if (updateError) {
-        // Fallback to upsert if row doesn't exist yet
-        const { error: upsertError } = await supabase.from("profile").upsert(
-          {
-            ...DEFAULT_PROFILE,
-            id: targetId,
-            avatar_url: avatarUrl,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "id" }
-        );
-        if (upsertError) {
-          console.error("Supabase updateProfileAvatar error:", upsertError);
-          return { success: false, error: upsertError.message };
-        }
-      }
-
-      return { success: true };
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Gagal menyimpan foto ke database Supabase";
-      return { success: false, error: msg };
+    if (upsertError) {
+      console.error("Supabase updateProfileAvatar error:", upsertError);
+      return { success: false, error: `Gagal menyimpan foto ke database Supabase: ${upsertError.message}` };
     }
-  }
 
-  return { success: true };
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("portfolio_profile");
+      window.dispatchEvent(new Event("portfolio_updated"));
+    }
+
+    return { success: true };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Gagal menyimpan foto ke database Supabase";
+    return { success: false, error: msg };
+  }
 }
 
 export async function fetchProjects(): Promise<Project[]> {
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.removeItem("portfolio_projects");
+    } catch {}
+  }
+
   if (isSupabaseConfigured && supabase) {
     try {
       const { data, error } = await supabase
@@ -282,24 +300,25 @@ export async function fetchProjects(): Promise<Project[]> {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (!error && data) {
+      if (!error && data && data.length > 0) {
         return data;
       }
+
+      // If connected but table is empty, auto-seed default projects
+      if (!error && data && data.length === 0) {
+        const { error: seedError } = await supabase
+          .from("projects")
+          .upsert(DEFAULT_PROJECTS);
+        if (!seedError) {
+          return DEFAULT_PROJECTS;
+        }
+      }
+
       if (error) {
-        console.warn("Supabase fetchProjects query note:", error.message);
+        console.warn("Supabase fetchProjects note:", error.message);
       }
     } catch (e) {
-      console.warn("Supabase fetchProjects error, using fallback:", e);
-    }
-  }
-
-  if (typeof window !== "undefined") {
-    const local = localStorage.getItem("portfolio_projects");
-    if (local) {
-      try {
-        const parsed = JSON.parse(local);
-        if (Array.isArray(parsed)) return parsed;
-      } catch {}
+      console.warn("Supabase fetchProjects error:", e);
     }
   }
 
@@ -307,59 +326,59 @@ export async function fetchProjects(): Promise<Project[]> {
 }
 
 export async function saveProject(project: Project): Promise<{ success: boolean; error?: string }> {
-  const current = await fetchProjects();
-  const existingIdx = current.findIndex((p) => p.id === project.id);
-  let updatedList: Project[];
-
-  if (existingIdx >= 0) {
-    updatedList = [...current];
-    updatedList[existingIdx] = project;
-  } else {
-    updatedList = [project, ...current];
+  if (!isSupabaseConfigured || !supabase) {
+    return {
+      success: false,
+      error:
+        "Supabase belum terhubung! Silakan konfigurasi .env.local agar proyek tersimpan ke database cloud.",
+    };
   }
 
-  if (typeof window !== "undefined") {
-    localStorage.setItem("portfolio_projects", JSON.stringify(updatedList));
-    window.dispatchEvent(new Event("portfolio_updated"));
-  }
+  try {
+    const { error } = await supabase.from("projects").upsert(project);
+    if (error) return { success: false, error: error.message };
 
-  if (isSupabaseConfigured && supabase) {
-    try {
-      const { error } = await supabase.from("projects").upsert(project);
-      if (error) return { success: false, error: error.message };
-      return { success: true };
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Error saving project";
-      return { success: false, error: msg };
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("portfolio_projects");
+      window.dispatchEvent(new Event("portfolio_updated"));
     }
+    return { success: true };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Error saving project";
+    return { success: false, error: msg };
   }
-
-  return { success: true };
 }
 
 export async function removeProject(id: string): Promise<{ success: boolean; error?: string }> {
-  const current = await fetchProjects();
-  const updatedList = current.filter((p) => p.id !== id);
-
-  if (typeof window !== "undefined") {
-    localStorage.setItem("portfolio_projects", JSON.stringify(updatedList));
-    window.dispatchEvent(new Event("portfolio_updated"));
+  if (!isSupabaseConfigured || !supabase) {
+    return {
+      success: false,
+      error: "Supabase belum terhubung! Silakan konfigurasi .env.local.",
+    };
   }
 
-  if (isSupabaseConfigured && supabase) {
-    try {
-      const { error } = await supabase.from("projects").delete().eq("id", id);
-      if (error) return { success: false, error: error.message };
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Error deleting project";
-      return { success: false, error: msg };
+  try {
+    const { error } = await supabase.from("projects").delete().eq("id", id);
+    if (error) return { success: false, error: error.message };
+
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("portfolio_projects");
+      window.dispatchEvent(new Event("portfolio_updated"));
     }
+    return { success: true };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Error deleting project";
+    return { success: false, error: msg };
   }
-
-  return { success: true };
 }
 
 export async function fetchCertificates(): Promise<Certificate[]> {
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.removeItem("portfolio_certificates");
+    } catch {}
+  }
+
   if (isSupabaseConfigured && supabase) {
     try {
       const { data, error } = await supabase
@@ -367,24 +386,25 @@ export async function fetchCertificates(): Promise<Certificate[]> {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (!error && data) {
+      if (!error && data && data.length > 0) {
         return data;
       }
+
+      // If connected but table is empty, auto-seed default certificates
+      if (!error && data && data.length === 0) {
+        const { error: seedError } = await supabase
+          .from("certificates")
+          .upsert(DEFAULT_CERTIFICATES);
+        if (!seedError) {
+          return DEFAULT_CERTIFICATES;
+        }
+      }
+
       if (error) {
-        console.warn("Supabase fetchCertificates query note:", error.message);
+        console.warn("Supabase fetchCertificates note:", error.message);
       }
     } catch (e) {
-      console.warn("Supabase fetchCertificates error, using fallback:", e);
-    }
-  }
-
-  if (typeof window !== "undefined") {
-    const local = localStorage.getItem("portfolio_certificates");
-    if (local) {
-      try {
-        const parsed = JSON.parse(local);
-        if (Array.isArray(parsed)) return parsed;
-      } catch {}
+      console.warn("Supabase fetchCertificates error:", e);
     }
   }
 
@@ -392,55 +412,49 @@ export async function fetchCertificates(): Promise<Certificate[]> {
 }
 
 export async function saveCertificate(cert: Certificate): Promise<{ success: boolean; error?: string }> {
-  const current = await fetchCertificates();
-  const existingIdx = current.findIndex((c) => c.id === cert.id);
-  let updatedList: Certificate[];
-
-  if (existingIdx >= 0) {
-    updatedList = [...current];
-    updatedList[existingIdx] = cert;
-  } else {
-    updatedList = [cert, ...current];
+  if (!isSupabaseConfigured || !supabase) {
+    return {
+      success: false,
+      error:
+        "Supabase belum terhubung! Silakan konfigurasi .env.local agar sertifikat tersimpan ke database cloud.",
+    };
   }
 
-  if (typeof window !== "undefined") {
-    localStorage.setItem("portfolio_certificates", JSON.stringify(updatedList));
-    window.dispatchEvent(new Event("portfolio_updated"));
-  }
+  try {
+    const { error } = await supabase.from("certificates").upsert(cert);
+    if (error) return { success: false, error: error.message };
 
-  if (isSupabaseConfigured && supabase) {
-    try {
-      const { error } = await supabase.from("certificates").upsert(cert);
-      if (error) return { success: false, error: error.message };
-      return { success: true };
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Error saving certificate";
-      return { success: false, error: msg };
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("portfolio_certificates");
+      window.dispatchEvent(new Event("portfolio_updated"));
     }
+    return { success: true };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Error saving certificate";
+    return { success: false, error: msg };
   }
-
-  return { success: true };
 }
 
 export async function removeCertificate(id: string): Promise<{ success: boolean; error?: string }> {
-  const current = await fetchCertificates();
-  const updatedList = current.filter((c) => c.id !== id);
-
-  if (typeof window !== "undefined") {
-    localStorage.setItem("portfolio_certificates", JSON.stringify(updatedList));
-    window.dispatchEvent(new Event("portfolio_updated"));
+  if (!isSupabaseConfigured || !supabase) {
+    return {
+      success: false,
+      error: "Supabase belum terhubung! Silakan konfigurasi .env.local.",
+    };
   }
 
-  if (isSupabaseConfigured && supabase) {
-    try {
-      const { error } = await supabase.from("certificates").delete().eq("id", id);
-      if (error) return { success: false, error: error.message };
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Error deleting certificate";
-      return { success: false, error: msg };
+  try {
+    const { error } = await supabase.from("certificates").delete().eq("id", id);
+    if (error) return { success: false, error: error.message };
+
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("portfolio_certificates");
+      window.dispatchEvent(new Event("portfolio_updated"));
     }
+    return { success: true };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Error deleting certificate";
+    return { success: false, error: msg };
   }
-
-  return { success: true };
 }
 

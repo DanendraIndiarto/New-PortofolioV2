@@ -2,8 +2,13 @@
 
 import Link from "next/link";
 import { Database, Shield, ArrowUp } from "lucide-react";
+import { Profile } from "@/types";
 
-export default function Footer() {
+interface FooterProps {
+  profile?: Profile;
+}
+
+export default function Footer({ profile }: FooterProps) {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -19,11 +24,12 @@ export default function Footer() {
               <Database className="w-4 h-4" />
             </div>
             <div>
-              <div className="font-bold text-white text-sm">
-                DanendraIndiarto<span className="text-emerald-400">.dev</span>
+              <div className="flex items-center gap-1 font-bold text-white text-sm">
+                <span>DanendraIndiarto</span>
+                <span className="text-emerald-400">.dev</span>
               </div>
               <div className="text-[11px] text-slate-400">
-                Junior Backend Developer &amp; Database Management
+                {profile?.tagline || profile?.title || "Junior Backend Developer & Database Management"}
               </div>
             </div>
           </div>
@@ -59,7 +65,7 @@ export default function Footer() {
 
         <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-slate-400 text-[11px]">
           <div>
-            &copy; 2026 Danendra Athallah Indiarto. Built with Next.js App Router, Tailwind CSS &amp; Supabase.
+            &copy; {new Date().getFullYear()} {profile?.name || "Danendra Athallah Indiarto"}. Built with Next.js App Router, Tailwind CSS &amp; Supabase.
           </div>
           <div className="flex flex-wrap items-center gap-4 text-slate-300">
             <Link href="#about" className="hover:text-emerald-400 transition-colors">Tentang</Link>

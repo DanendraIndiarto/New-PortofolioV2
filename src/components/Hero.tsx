@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Database, Server, Terminal, GitBranch } from "lucide-react";
 import { WhatsAppIcon } from "@/components/Icons";
@@ -10,6 +12,12 @@ interface HeroProps {
 }
 
 export default function Hero({ profile }: HeroProps) {
+  const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url);
+
+  useEffect(() => {
+    setAvatarUrl(profile.avatar_url);
+  }, [profile.avatar_url]);
+
   const cleanWaNumber = profile.whatsapp_number.replace(/\D/g, "");
 
   return (
@@ -17,8 +25,29 @@ export default function Hero({ profile }: HeroProps) {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Single Main Column - Clean, Elegant & Modern */}
-        <div className="flex flex-col items-center text-center space-y-8">
+        <div className="flex flex-col items-center text-center space-y-6">
           
+          {/* Dynamic Profile Avatar */}
+          <div className="relative group/hero-avatar">
+            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-emerald-500/40 p-1 bg-slate-900 shadow-xl shadow-emerald-500/10 group-hover/hero-avatar:border-emerald-400 group-hover:scale-105 transition-all duration-300">
+              <div className="relative w-full h-full rounded-xl overflow-hidden bg-slate-800">
+                <Image
+                  src={avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80"}
+                  alt={profile.name}
+                  fill
+                  priority
+                  className="object-cover"
+                  unoptimized
+                  onError={() => setAvatarUrl("https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80")}
+                />
+              </div>
+            </div>
+            {/* Active / Verified Status Indicator */}
+            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-[#070b12] flex items-center justify-center shadow">
+              <span className="w-2 h-2 rounded-full bg-slate-950 animate-pulse"></span>
+            </div>
+          </div>
+
           {/* Status Badge */}
           <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-slate-900/90 border border-emerald-500/30 text-xs font-mono text-emerald-400 backdrop-blur-md shadow-lg shadow-emerald-500/10">
             <span className="relative flex h-2.5 w-2.5">

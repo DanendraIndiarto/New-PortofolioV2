@@ -38,14 +38,18 @@ export async function uploadMedia(
   }
 
   try {
-    const fileExt = file.name.split(".").pop();
+    const rawExt = file.name.split(".").pop() || "jpg";
+    const fileExt = rawExt.toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
     const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
+
+    const contentType = file.type || `image/${fileExt === "jpg" ? "jpeg" : fileExt}`;
 
     const { error: uploadError } = await supabase.storage
       .from("portfolio-assets")
       .upload(fileName, file, {
         cacheControl: "3600",
-        upsert: false,
+        upsert: true,
+        contentType,
       });
 
     if (uploadError) {

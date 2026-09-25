@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { 
@@ -22,6 +23,12 @@ interface AboutSectionProps {
 }
 
 export default function AboutSection({ profile }: AboutSectionProps) {
+  const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url);
+
+  useEffect(() => {
+    setAvatarUrl(profile.avatar_url);
+  }, [profile.avatar_url]);
+
   const cleanWaNumber = profile.whatsapp_number.replace(/\D/g, "");
 
   // Tech stack filtered purely to Danendra's CV
@@ -123,11 +130,12 @@ export default function AboutSection({ profile }: AboutSectionProps) {
                   <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-2 border-emerald-500/40 p-1 bg-slate-900 shadow-xl group-hover/avatar:border-emerald-400 transition-all duration-300">
                     <div className="relative w-full h-full rounded-xl overflow-hidden bg-slate-800">
                       <Image
-                        src={profile.avatar_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80"}
+                        src={avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80"}
                         alt={profile.name}
                         fill
                         className="object-cover group-hover/avatar:scale-105 transition-transform duration-500"
                         unoptimized
+                        onError={() => setAvatarUrl("https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80")}
                       />
                     </div>
                   </div>

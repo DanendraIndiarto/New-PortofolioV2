@@ -28,6 +28,7 @@ import {
   DEFAULT_CERTIFICATES, 
   fetchProfile, 
   saveProfile, 
+  updateProfileAvatar,
   fetchProjects, 
   saveProject, 
   removeProject, 
@@ -133,24 +134,43 @@ export default function AdminPage() {
     }
   };
 
-  // Avatar upload handler
+  // Avatar upload handler - uploads to Supabase Storage & automatically saves to database record
   const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setUploadingAvatar(true);
     try {
+      // 1. Upload to Supabase Storage bucket 'portfolio-assets' (folder: 'avatars')
       const { url, error } = await uploadMedia(file, "avatars");
       if (error || !url) {
-        showFeedback("error", error || "Gagal mengunggah foto profil");
-      } else {
-        setProfile((prev) => ({ ...prev, avatar_url: url }));
-        showFeedback("success", "Foto profil berhasil diunggah! Klik Simpan Profil.");
+        showFeedback("error", error || "Gagal mengunggah foto profil ke Storage.");
+        return;
       }
-    } catch {
-      showFeedback("error", "Terjadi kesalahan upload.");
+
+      // 2. Immediately update local state
+      setProfile((prev) => ({ ...prev, avatar_url: url }));
+
+      // 3. Immediately persist the public URL to Supabase database table 'profile'
+      const saveRes = await updateProfileAvatar(url);
+      if (saveRes.success) {
+        showFeedback(
+          "success",
+          "Foto profil berhasil diunggah ke Storage dan otomatis disimpan ke database!"
+        );
+      } else {
+        showFeedback(
+          "error",
+          `Foto terunggah ke Storage, tapi gagal disimpan ke database: ${saveRes.error}`
+        );
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Terjadi kesalahan upload.";
+      showFeedback("error", msg);
     } finally {
       setUploadingAvatar(false);
+      // Reset input value to allow re-uploading same file if desired
+      e.target.value = "";
     }
   };
 
@@ -578,30 +598,35 @@ export default function AdminPage() {
             {/* Left: Avatar Upload Box */}
             <div className="lg:col-span-4 space-y-6">
               <div className="glass-card rounded-2xl p-6 border border-slate-800/80 text-center">
-                <h3 className="text-sm font-bold text-white font-mono mb-4">
-                  FOTO PROFIL (ABOUT SECTION)
-                </h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-xs font-bold text-white font-mono uppercase tracking-wider">
+                    Foto Profil (Avatar)
+                  </h3>
+                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                    Storage Sync
+                  </span>
+                </div>
 
-                <div className="relative w-36 h-36 mx-auto rounded-2xl overflow-hidden border-2 border-emerald-500/40 p-1 bg-slate-900 shadow-xl mb-4">
+                <div className="relative w-36 h-36 mx-auto rounded-2xl overflow-hidden border-2 border-emerald-500/40 p-1 bg-slate-900 shadow-xl mb-4 group/preview">
                   <div className="relative w-full h-full rounded-xl overflow-hidden bg-slate-800">
                     <Image
                       src={profile.avatar_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80"}
                       alt="Avatar Preview"
                       fill
-                      className="object-cover"
+                      className="object-cover group-hover/preview:scale-105 transition-transform duration-300"
                       unoptimized
                     />
                   </div>
                 </div>
 
-                <p className="text-xs text-slate-400 mb-4 font-mono">
-                  Ganti foto profil dengan mengupload file baru atau tempel tautan gambar:
+                <p className="text-xs text-slate-400 mb-4 font-mono leading-relaxed">
+                  Unggah file foto baru. URL publik dari Supabase Storage akan otomatis disimpan ke database profil:
                 </p>
 
                 {/* File Upload Button */}
-                <label className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-emerald-400 text-xs font-mono border border-slate-800 hover:border-emerald-500/40 cursor-pointer transition-all">
+                <label className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-emerald-400 text-xs font-mono border border-slate-800 hover:border-emerald-500/40 cursor-pointer transition-all shadow-sm">
                   <Upload className="w-4 h-4" />
-                  <span>{uploadingAvatar ? "Mengunggah..." : "Pilih File Foto Baru"}</span>
+                  <span>{uploadingAvatar ? "Mengunggah & Menyimpan ke DB..." : "Pilih File Foto Baru"}</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -611,18 +636,39 @@ export default function AdminPage() {
                   />
                 </label>
 
-                {/* Direct Avatar URL input */}
+                {/* Direct Avatar URL input & Instant Save Button */}
                 <div className="mt-4 pt-4 border-t border-slate-800 text-left">
                   <label className="block text-[11px] font-mono text-slate-400 mb-1">
-                    Atau URL Gambar Langsung:
+                    Atau Simpan URL Gambar Langsung:
                   </label>
-                  <input
-                    type="text"
-                    value={profile.avatar_url}
-                    onChange={(e) => setProfile({ ...profile, avatar_url: e.target.value })}
-                    placeholder="https://..."
-                    className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-xs font-mono text-slate-200 focus:outline-none focus:border-emerald-500"
-                  />
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={profile.avatar_url}
+                      onChange={(e) => setProfile({ ...profile, avatar_url: e.target.value })}
+                      placeholder="https://..."
+                      className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-xs font-mono text-slate-200 focus:outline-none focus:border-emerald-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!profile.avatar_url) {
+                          showFeedback("error", "URL foto tidak boleh kosong.");
+                          return;
+                        }
+                        const res = await updateProfileAvatar(profile.avatar_url);
+                        if (res.success) {
+                          showFeedback("success", "URL foto profil berhasil disimpan ke database!");
+                        } else {
+                          showFeedback("error", res.error || "Gagal menyimpan foto ke database.");
+                        }
+                      }}
+                      className="w-full py-2 px-3 bg-slate-900 hover:bg-slate-850 text-emerald-400 border border-slate-800 hover:border-emerald-500/40 text-xs font-mono rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Simpan URL Foto ke Database</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

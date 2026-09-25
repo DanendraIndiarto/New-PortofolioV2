@@ -175,23 +175,27 @@ export async function saveProfile(profile: Profile): Promise<{ success: boolean;
 
   if (isSupabaseConfigured && supabase) {
     try {
-      const { error } = await supabase.from("profile").upsert({
-        id: profile.id || "main-profile",
-        name: profile.name,
-        title: profile.title,
-        tagline: profile.tagline,
-        bio: profile.bio,
-        avatar_url: profile.avatar_url,
-        resume_url: profile.resume_url,
-        whatsapp_number: profile.whatsapp_number,
-        email: profile.email,
-        location: profile.location,
-        github_url: profile.github_url,
-        linkedin_url: profile.linkedin_url,
-        instagram_url: profile.instagram_url,
-        formspree_id: profile.formspree_id,
-        updated_at: new Date().toISOString(),
-      });
+      const profileId = profile.id || "main-profile";
+      const { error } = await supabase.from("profile").upsert(
+        {
+          id: profileId,
+          name: profile.name || DEFAULT_PROFILE.name,
+          title: profile.title || DEFAULT_PROFILE.title,
+          tagline: profile.tagline || DEFAULT_PROFILE.tagline,
+          bio: profile.bio || DEFAULT_PROFILE.bio,
+          avatar_url: profile.avatar_url,
+          resume_url: profile.resume_url || DEFAULT_PROFILE.resume_url,
+          whatsapp_number: profile.whatsapp_number || DEFAULT_PROFILE.whatsapp_number,
+          email: profile.email || DEFAULT_PROFILE.email,
+          location: profile.location || DEFAULT_PROFILE.location,
+          github_url: profile.github_url || DEFAULT_PROFILE.github_url,
+          linkedin_url: profile.linkedin_url || DEFAULT_PROFILE.linkedin_url,
+          instagram_url: profile.instagram_url || DEFAULT_PROFILE.instagram_url,
+          formspree_id: profile.formspree_id || DEFAULT_PROFILE.formspree_id,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "id" }
+      );
 
       if (error) {
         return { success: false, error: error.message };
@@ -199,6 +203,70 @@ export async function saveProfile(profile: Profile): Promise<{ success: boolean;
       return { success: true };
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Gagal menyimpan ke Supabase";
+      return { success: false, error: msg };
+    }
+  }
+
+  return { success: true };
+}
+
+/**
+ * Directly updates the avatar_url in the database table 'profile' (and localStorage).
+ * This ensures that whenever a photo is uploaded to Supabase Storage, the database record
+ * is immediately updated with the public URL without waiting for full form submission.
+ */
+export async function updateProfileAvatar(avatarUrl: string): Promise<{ success: boolean; error?: string }> {
+  if (typeof window !== "undefined") {
+    const local = localStorage.getItem("portfolio_profile");
+    let current: Profile = DEFAULT_PROFILE;
+    if (local) {
+      try {
+        current = { ...DEFAULT_PROFILE, ...JSON.parse(local) };
+      } catch {}
+    }
+    current.avatar_url = avatarUrl;
+    localStorage.setItem("portfolio_profile", JSON.stringify(current));
+    window.dispatchEvent(new Event("portfolio_updated"));
+  }
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data: existing } = await supabase
+        .from("profile")
+        .select("id")
+        .limit(1)
+        .maybeSingle();
+
+      const targetId = existing?.id || "main-profile";
+
+      const { error: updateError } = await supabase
+        .from("profile")
+        .update({
+          avatar_url: avatarUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", targetId);
+
+      if (updateError) {
+        // Fallback to upsert if row doesn't exist yet
+        const { error: upsertError } = await supabase.from("profile").upsert(
+          {
+            ...DEFAULT_PROFILE,
+            id: targetId,
+            avatar_url: avatarUrl,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "id" }
+        );
+        if (upsertError) {
+          console.error("Supabase updateProfileAvatar error:", upsertError);
+          return { success: false, error: upsertError.message };
+        }
+      }
+
+      return { success: true };
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Gagal menyimpan foto ke database Supabase";
       return { success: false, error: msg };
     }
   }

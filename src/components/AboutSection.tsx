@@ -1,14 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { 
   Database, 
   Server, 
   Cpu, 
   Terminal, 
-  ExternalLink,
   MapPin,
   Mail,
   GitBranch,
@@ -23,11 +21,9 @@ interface AboutSectionProps {
 }
 
 export default function AboutSection({ profile }: AboutSectionProps) {
-  const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url);
-
-  useEffect(() => {
-    setAvatarUrl(profile.avatar_url);
-  }, [profile.avatar_url]);
+  const [avatarFailed, setAvatarFailed] = useState(false);
+  const fallbackAvatar = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80";
+  const avatarUrl = avatarFailed ? fallbackAvatar : (profile.avatar_url || fallbackAvatar);
 
   const cleanWaNumber = profile.whatsapp_number.replace(/\D/g, "");
 
@@ -111,17 +107,15 @@ export default function AboutSection({ profile }: AboutSectionProps) {
             <div className="absolute -top-20 -right-20 w-56 h-56 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none group-hover:bg-emerald-500/25 transition-all duration-500" />
 
             <div>
-              {/* Header with edit shortcut */}
+              {/* Header */}
               <div className="flex items-center justify-between mb-6">
                 <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20">
                   {profile.title || "Junior Backend Developer"}
                 </span>
-                <Link
-                  href="/admin"
-                  className="text-xs font-mono text-slate-400 hover:text-white flex items-center gap-1 transition-colors"
-                >
-                  Ubah Foto <ExternalLink className="w-3 h-3" />
-                </Link>
+                <span className="text-xs font-mono text-slate-400 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
+                  Portofolio Aktif
+                </span>
               </div>
 
               {/* Photo & Identity */}
@@ -130,12 +124,12 @@ export default function AboutSection({ profile }: AboutSectionProps) {
                   <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-2 border-emerald-500/40 p-1 bg-slate-900 shadow-xl group-hover/avatar:border-emerald-400 transition-all duration-300">
                     <div className="relative w-full h-full rounded-xl overflow-hidden bg-slate-800">
                       <Image
-                        src={avatarUrl || profile.avatar_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80"}
+                        src={avatarUrl}
                         alt={profile.name || "Foto Profil"}
                         fill
                         className="object-cover group-hover/avatar:scale-105 transition-transform duration-500"
                         unoptimized
-                        onError={() => setAvatarUrl("https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80")}
+                        onError={() => setAvatarFailed(true)}
                       />
                     </div>
                   </div>

@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { FolderGit2, ExternalLink, Sparkles, Activity } from "lucide-react";
 import { GithubIcon } from "@/components/Icons";
 import { Project } from "@/types";
@@ -33,13 +32,7 @@ export default function PortfolioSection({ projects }: PortfolioSectionProps) {
         {projects.length === 0 ? (
           <div className="text-center py-16 px-4 rounded-2xl glass-card border border-slate-800 max-w-xl mx-auto">
             <FolderGit2 className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-            <p className="text-slate-400 text-sm font-mono mb-2">Belum ada proyek yang ditampilkan.</p>
-            <Link
-              href="/admin"
-              className="text-xs text-emerald-400 hover:text-emerald-300 font-mono underline"
-            >
-              + Tambah proyek baru melalui Admin Portal
-            </Link>
+            <p className="text-slate-400 text-sm font-mono">Daftar proyek akan segera diperbarui.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8">
@@ -146,15 +139,6 @@ export default function PortfolioSection({ projects }: PortfolioSectionProps) {
           </div>
         )}
 
-        {/* Admin hint button */}
-        <div className="mt-12 text-center">
-          <Link
-            href="/admin"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-emerald-400 text-xs font-mono border border-slate-800 transition-colors"
-          >
-            <span>+ Kelola atau tambah proyek via Admin Dashboard</span>
-          </Link>
-        </div>
 
       </div>
     </section>

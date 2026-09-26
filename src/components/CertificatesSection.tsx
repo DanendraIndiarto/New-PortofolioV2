@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { Award, ExternalLink, Calendar, ShieldCheck, X } from "lucide-react";
 import { Certificate } from "@/types";
 
@@ -35,13 +34,7 @@ export default function CertificatesSection({ certificates }: CertificatesSectio
         {certificates.length === 0 ? (
           <div className="text-center py-16 px-4 rounded-2xl glass-card border border-slate-800 max-w-xl mx-auto">
             <Award className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-            <p className="text-slate-400 text-sm font-mono mb-2">Belum ada sertifikat yang ditampilkan.</p>
-            <Link
-              href="/admin"
-              className="text-xs text-emerald-400 hover:text-emerald-300 font-mono underline"
-            >
-              + Tambah sertifikat baru melalui Admin Portal
-            </Link>
+            <p className="text-slate-400 text-sm font-mono">Daftar sertifikat akan segera diperbarui.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

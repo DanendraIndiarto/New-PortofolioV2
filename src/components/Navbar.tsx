@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Database, Shield, Menu, X, ArrowUpRight } from "lucide-react";
+import { Database, Menu, X } from "lucide-react";
 import { Profile } from "@/types";
 
 interface NavbarProps {
@@ -54,7 +54,7 @@ export default function Navbar({ profile }: NavbarProps) {
                 <span className="text-emerald-400">.dev</span>
               </div>
               <span className="hidden sm:inline-block text-[10px] text-slate-400 font-mono tracking-tight truncate">
-                Junior Backend Developer &amp; Database Management
+                {profile?.tagline || profile?.title || "Junior Backend Developer & Database Management"}
               </span>
             </div>
           </Link>
@@ -72,11 +72,11 @@ export default function Navbar({ profile }: NavbarProps) {
             ))}
           </nav>
 
-          {/* SISI KANAN: Status DB & Tombol Admin (Desktop & Mobile) */}
+          {/* SISI KANAN: Status DB & Menu Toggle Mobile */}
           <div className="flex items-center gap-2.5 shrink-0">
 
-            {/* Status Pill - Hanya tampil di desktop (lg) agar tidak bertumpuk */}
-            <div className="hidden lg:inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono whitespace-nowrap">
+            {/* Status Pill - Tampil di desktop */}
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono whitespace-nowrap">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -84,25 +84,6 @@ export default function Navbar({ profile }: NavbarProps) {
               <span className="hidden xl:inline">MySQL Database Active &amp; Server Online</span>
               <span className="xl:hidden">MySQL Active</span>
             </div>
-
-            {/* Tombol Admin Desktop */}
-            <Link
-              href="/admin"
-              className="hidden lg:inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 rounded-lg transition-all whitespace-nowrap"
-              title="Admin Portal"
-            >
-              <Shield className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Admin</span>
-            </Link>
-
-            {/* Tombol Admin Mobile / Tablet */}
-            <Link
-              href="/admin"
-              className="lg:hidden flex items-center justify-center w-9 h-9 rounded-xl bg-slate-900 hover:bg-slate-850 text-slate-300 hover:text-emerald-400 border border-slate-800 transition-colors"
-              title="Admin Portal"
-            >
-              <Shield className="w-4 h-4 text-emerald-400" />
-            </Link>
 
             {/* Tombol Hamburger Mobile / Tablet */}
             <button
@@ -138,13 +119,6 @@ export default function Navbar({ profile }: NavbarProps) {
                 <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse" />
                 MySQL Active &amp; Server Online
               </span>
-              <Link
-                href="/admin"
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-slate-400 hover:text-white flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800"
-              >
-                Admin <ArrowUpRight className="w-3 h-3 text-emerald-400" />
-              </Link>
             </div>
           </div>
         </div>

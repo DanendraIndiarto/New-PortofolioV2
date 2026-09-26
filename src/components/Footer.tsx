@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Database, Shield, ArrowUp } from "lucide-react";
+import { Database, ArrowUp } from "lucide-react";
 import { Profile } from "@/types";
 
 interface FooterProps {
@@ -42,21 +42,14 @@ export default function Footer({ profile }: FooterProps) {
             <span className="text-slate-300">Server Online (Ubuntu &amp; PM2)</span>
           </div>
 
-          {/* Admin link & Back to Top */}
+          {/* Back to Top */}
           <div className="flex items-center gap-3">
-            <Link
-              href="/admin"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-emerald-400 transition-colors"
-            >
-              <Shield className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Admin Portal</span>
-            </Link>
-
             <button
               onClick={scrollToTop}
-              className="p-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white transition-colors"
+              className="p-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white transition-colors flex items-center gap-2"
               title="Kembali ke atas"
             >
+              <span>Kembali ke Atas</span>
               <ArrowUp className="w-4 h-4" />
             </button>
           </div>

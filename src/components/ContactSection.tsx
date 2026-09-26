@@ -288,7 +288,7 @@ export default function ContactSection({ profile }: ContactSectionProps) {
                     ) : (
                       <>
                         <Send className="w-4 h-4" />
-                        <span>Kirim Pesan Sekarang</span>
+                        <span>Kirim Pesan Sekarang</span>``
                       </>
                     )}
                   </button>

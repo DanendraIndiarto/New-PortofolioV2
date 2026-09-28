@@ -10,6 +10,11 @@ interface HeroProps {
 export default function Hero({ profile }: HeroProps) {
   const cleanWaNumber = (profile.whatsapp_number || "").replace(/\D/g, "");
 
+  // Hapus duplikasi kalimat pembuka "Halo, saya [Nama]." yang kedua dari profile.bio
+  const bioDescription = (profile.bio || "")
+    .replace(/^(Halo,?\s*(?:perkenalkan\s+)?(?:saya|nama saya)\s+[^.]+\.\s*)/i, "")
+    .trim();
+
   return (
     <section className="relative pt-32 pb-20 md:pt-44 md:pb-28 overflow-hidden">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -23,7 +28,7 @@ export default function Hero({ profile }: HeroProps) {
               Membangun Solusi <span className="text-gradient-emerald">Backend &amp; Database MySQL</span> yang Efisien.
             </h1>
             <p className="text-slate-300 text-base sm:text-lg lg:text-xl font-normal leading-relaxed max-w-3xl mx-auto">
-              Halo, saya <span className="text-white font-semibold">{profile.name}</span>. {profile.bio}
+              Halo, saya <span className="text-white font-bold">{profile.name}</span>.{bioDescription ? ` ${bioDescription}` : ""}
             </p>
           </div>
 

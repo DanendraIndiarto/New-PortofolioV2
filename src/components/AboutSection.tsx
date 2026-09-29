@@ -20,10 +20,15 @@ interface AboutSectionProps {
   profile: Profile;
 }
 
+const PERMANENT_AVATAR_URL = "https://ntffmjnovbjbcktcisoo.supabase.co/storage/v1/object/public/portfolio-assets/avatars/1790367455704-euqzo0.jpg";
+
 export default function AboutSection({ profile }: AboutSectionProps) {
   const [avatarFailed, setAvatarFailed] = useState(false);
-  const fallbackAvatar = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80";
-  const avatarUrl = avatarFailed ? fallbackAvatar : (profile.avatar_url || fallbackAvatar);
+  // Ensure profile avatar takes the real photo permanently and never loads any generic stock/AI photo
+  const rawUrl = profile.avatar_url && !profile.avatar_url.includes("images.unsplash.com") 
+    ? profile.avatar_url 
+    : PERMANENT_AVATAR_URL;
+  const avatarUrl = rawUrl || PERMANENT_AVATAR_URL;
 
   const cleanWaNumber = profile.whatsapp_number.replace(/\D/g, "");
 
@@ -122,15 +127,25 @@ export default function AboutSection({ profile }: AboutSectionProps) {
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-6">
                 <div className="relative group/avatar">
                   <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-2 border-emerald-500/40 p-1 bg-slate-900 shadow-xl group-hover/avatar:border-emerald-400 transition-all duration-300">
-                    <div className="relative w-full h-full rounded-xl overflow-hidden bg-slate-800">
-                      <Image
-                        src={avatarUrl}
-                        alt={profile.name || "Foto Profil"}
-                        fill
-                        className="object-cover group-hover/avatar:scale-105 transition-transform duration-500"
-                        unoptimized
-                        onError={() => setAvatarFailed(true)}
-                      />
+                    <div className="relative w-full h-full rounded-xl overflow-hidden bg-slate-800 flex items-center justify-center">
+                      {avatarFailed ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-slate-850 to-emerald-950 text-emerald-400">
+                          <div className="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center font-mono font-bold text-xl text-emerald-300">
+                            DI
+                          </div>
+                          <span className="text-[10px] font-mono text-emerald-400/80 mt-1">Danendra</span>
+                        </div>
+                      ) : (
+                        <Image
+                          src={avatarUrl}
+                          alt={profile.name || "Foto Profil Danendra Athallah Indiarto"}
+                          fill
+                          className="object-cover group-hover/avatar:scale-105 transition-transform duration-500"
+                          unoptimized
+                          priority
+                          onError={() => setAvatarFailed(true)}
+                        />
+                      )}
                     </div>
                   </div>
                   {/* Verified badge */}

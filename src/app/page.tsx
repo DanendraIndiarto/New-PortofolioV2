@@ -23,8 +23,24 @@ import { Profile, Project, Certificate } from "@/types";
 
 export default function Home() {
   const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE);
-  const [projects, setProjects] = useState<Project[]>(DEFAULT_PROJECTS);
-  const [certificates, setCertificates] = useState<Certificate[]>(DEFAULT_CERTIFICATES);
+  const [projects, setProjects] = useState<Project[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("portfolio_cached_projects");
+        if (cached) return JSON.parse(cached);
+      } catch {}
+    }
+    return DEFAULT_PROJECTS;
+  });
+  const [certificates, setCertificates] = useState<Certificate[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("portfolio_cached_certificates");
+        if (cached) return JSON.parse(cached);
+      } catch {}
+    }
+    return DEFAULT_CERTIFICATES;
+  });
 
   useEffect(() => {
     async function loadData() {
@@ -44,20 +60,59 @@ export default function Home() {
 
     loadData();
 
-    // 1. Listen to instant in-app update event (same window/tab)
-    const handleUpdate = () => {
+    // 1. Instant in-app update event (same window/tab)
+    const handleLocalUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<{ action?: string; id?: string }>;
+      if (customEvent.detail?.action === "DELETE_PROJECT" && customEvent.detail.id) {
+        setProjects((prev) => prev.filter((p) => p.id !== customEvent.detail!.id));
+      } else if (customEvent.detail?.action === "DELETE_CERTIFICATE" && customEvent.detail.id) {
+        setCertificates((prev) => prev.filter((c) => c.id !== customEvent.detail!.id));
+      }
       loadData();
     };
-    window.addEventListener("portfolio_updated", handleUpdate);
+    window.addEventListener("portfolio_updated", handleLocalUpdate);
 
-    // 2. Listen to cross-tab storage changes
-    window.addEventListener("storage", handleUpdate);
+    // 2. Cross-tab storage change listener
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "portfolio_sync_action" && e.newValue) {
+        try {
+          const actionData = JSON.parse(e.newValue);
+          if (actionData.type === "DELETE_PROJECT" && actionData.id) {
+            setProjects((prev) => prev.filter((p) => p.id !== actionData.id));
+          } else if (actionData.type === "DELETE_CERTIFICATE" && actionData.id) {
+            setCertificates((prev) => prev.filter((c) => c.id !== actionData.id));
+          }
+        } catch {}
+      }
+      loadData();
+    };
+    window.addEventListener("storage", handleStorageChange);
 
-    // 3. Listen to live Supabase Realtime changes (cross-device & direct DB edits)
+    // 3. Tab visibility & focus sync (auto-refresh when switching back to tab)
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        loadData();
+      }
+    };
+    window.addEventListener("focus", loadData);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    // 4. Supabase Realtime multi-device sync (both Broadcast & Postgres Changes)
     let channel: ReturnType<NonNullable<typeof supabase>["channel"]> | null = null;
     if (isSupabaseConfigured && supabase) {
       channel = supabase
-        .channel("portfolio-realtime-sync")
+        .channel("portfolio-sync")
+        // Realtime Broadcast (fastest multi-device sync)
+        .on("broadcast", { event: "sync_event" }, (msg) => {
+          const payload = msg.payload as { action?: string; id?: string };
+          if (payload?.action === "DELETE_PROJECT" && payload.id) {
+            setProjects((prev) => prev.filter((p) => p.id !== payload.id));
+          } else if (payload?.action === "DELETE_CERTIFICATE" && payload.id) {
+            setCertificates((prev) => prev.filter((c) => c.id !== payload.id));
+          }
+          loadData();
+        })
+        // Postgres Changes (table-level triggers)
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "profile" },
@@ -68,14 +123,26 @@ export default function Home() {
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "projects" },
-          () => {
+          (payload) => {
+            if (payload.eventType === "DELETE") {
+              const oldId = (payload.old as { id?: string })?.id;
+              if (oldId) {
+                setProjects((prev) => prev.filter((p) => p.id !== oldId));
+              }
+            }
             loadData();
           }
         )
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "certificates" },
-          () => {
+          (payload) => {
+            if (payload.eventType === "DELETE") {
+              const oldId = (payload.old as { id?: string })?.id;
+              if (oldId) {
+                setCertificates((prev) => prev.filter((c) => c.id !== oldId));
+              }
+            }
             loadData();
           }
         )
@@ -83,8 +150,10 @@ export default function Home() {
     }
 
     return () => {
-      window.removeEventListener("portfolio_updated", handleUpdate);
-      window.removeEventListener("storage", handleUpdate);
+      window.removeEventListener("portfolio_updated", handleLocalUpdate);
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("focus", loadData);
+      document.removeEventListener("visibilitychange", handleVisibility);
       if (channel && supabase) {
         supabase.removeChannel(channel);
       }

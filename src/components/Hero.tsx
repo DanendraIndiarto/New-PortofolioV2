@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, Database, Server, Terminal, GitBranch } from "lucide-react";
 import { WhatsAppIcon } from "@/components/Icons";
 import { Profile } from "@/types";
@@ -6,6 +7,8 @@ import { Profile } from "@/types";
 interface HeroProps {
   profile: Profile;
 }
+
+const PERMANENT_AVATAR_URL = "https://ntffmjnovbjbcktcisoo.supabase.co/storage/v1/object/public/portfolio-assets/avatars/1790367455704-euqzo0.jpg";
 
 export default function Hero({ profile }: HeroProps) {
   const cleanWaNumber = (profile.whatsapp_number || "").replace(/\D/g, "");
@@ -15,12 +18,34 @@ export default function Hero({ profile }: HeroProps) {
     .replace(/^(Halo,?\s*(?:perkenalkan\s+)?(?:saya|nama saya)\s+[^.]+\.\s*)/i, "")
     .trim();
 
+  const realAvatarUrl = profile.avatar_url && !profile.avatar_url.includes("images.unsplash.com")
+    ? profile.avatar_url
+    : PERMANENT_AVATAR_URL;
+
   return (
     <section className="relative pt-32 pb-20 md:pt-44 md:pb-28 overflow-hidden">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Single Main Column - Clean, Elegant & Modern */}
         <div className="flex flex-col items-center text-center space-y-6">
+
+          {/* Profile Pill Badge with Real Avatar */}
+          <div className="inline-flex items-center gap-3 px-3.5 py-1.5 rounded-full glass-card border border-emerald-500/30 text-xs font-mono text-emerald-400 shadow-lg shadow-emerald-500/10">
+            <div className="relative w-7 h-7 rounded-full overflow-hidden border border-emerald-400 shrink-0 bg-slate-800">
+              <Image
+                src={realAvatarUrl}
+                alt={profile.name || "Danendra Athallah Indiarto"}
+                fill
+                className="object-cover"
+                unoptimized
+                priority
+              />
+            </div>
+            <span className="flex items-center gap-1.5 text-slate-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>{profile.title || "Junior Backend Developer"}</span>
+            </span>
+          </div>
 
           {/* Main Headline */}
           <div className="space-y-4 max-w-4xl">

@@ -7,15 +7,15 @@ export const DEFAULT_PROFILE: Profile = {
   title: "Junior Backend Developer",
   tagline: "Junior Backend Developer & Database Management",
   bio: "Halo, saya Danendra Athallah Indiarto. Berfokus pada perancangan RESTful API yang efisien, pengelolaan database MySQL, serta manajemen server menggunakan Linux Ubuntu dan PM2. Memiliki pengalaman dalam integrasi database relasional, otomasi deployment menggunakan GitHub Actions, dan pembuatan aplikasi web modern.",
-  avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80",
+  avatar_url: "https://ntffmjnovbjbcktcisoo.supabase.co/storage/v1/object/public/portfolio-assets/avatars/1790367455704-euqzo0.jpg",
   resume_url: "#contact",
   whatsapp_number: "6282334027274",
-  email: "danendra.athallah@gmail.com",
+  email: "indiartodanendra@gmail.com",
   location: "Malang, Indonesia",
-  github_url: "https://github.com",
-  linkedin_url: "https://linkedin.com",
-  instagram_url: "https://instagram.com",
-  formspree_id: "your-form-id",
+  github_url: "https://github.com/danendraindiarto",
+  linkedin_url: "https://www.linkedin.com/in/danendra-indiarto",
+  instagram_url: "https://www.instagram.com/d.atllh",
+  formspree_id: "mjykellp",
 };
 
 export const DEFAULT_EXPERIENCES: Experience[] = [
@@ -307,6 +307,11 @@ export async function fetchProjects(): Promise<Project[]> {
 
       // Return actual database state directly (even if empty [])
       if (data) {
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem("portfolio_cached_projects", JSON.stringify(data));
+          } catch {}
+        }
         return data;
       }
     } catch (e) {
@@ -333,8 +338,36 @@ export async function saveProject(project: Project): Promise<{ success: boolean;
     if (typeof window !== "undefined") {
       localStorage.removeItem("portfolio_projects");
       localStorage.setItem("portfolio_sync_trigger", Date.now().toString());
-      window.dispatchEvent(new Event("portfolio_updated"));
+      localStorage.setItem(
+        "portfolio_sync_action",
+        JSON.stringify({ type: "MUTATE_PROJECT", id: project.id, timestamp: Date.now() })
+      );
+      window.dispatchEvent(
+        new CustomEvent("portfolio_updated", {
+          detail: { action: "MUTATE_PROJECT", id: project.id },
+        })
+      );
     }
+
+    // Broadcast change across all connected clients via Supabase Realtime
+    if (supabase) {
+      try {
+        const client = supabase;
+        const syncChannel = client.channel("portfolio-sync");
+        syncChannel.subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            syncChannel.send({
+              type: "broadcast",
+              event: "sync_event",
+              payload: { action: "MUTATE_PROJECT", id: project.id },
+            }).then(() => {
+              client.removeChannel(syncChannel);
+            });
+          }
+        });
+      } catch {}
+    }
+
     return { success: true };
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Error saving project";
@@ -367,11 +400,53 @@ export async function removeProject(id: string): Promise<{ success: boolean; err
       return { success: false, error: error.message };
     }
 
+    // 1. Local storage & in-app event sync
     if (typeof window !== "undefined") {
       localStorage.removeItem("portfolio_projects");
       localStorage.setItem("portfolio_sync_trigger", Date.now().toString());
-      window.dispatchEvent(new Event("portfolio_updated"));
+      localStorage.setItem(
+        "portfolio_sync_action",
+        JSON.stringify({ type: "DELETE_PROJECT", id: cleanId, timestamp: Date.now() })
+      );
+      try {
+        const cached = localStorage.getItem("portfolio_cached_projects");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed)) {
+            localStorage.setItem(
+              "portfolio_cached_projects",
+              JSON.stringify(parsed.filter((p: Project) => p.id !== cleanId))
+            );
+          }
+        }
+      } catch {}
+
+      window.dispatchEvent(
+        new CustomEvent("portfolio_updated", {
+          detail: { action: "DELETE_PROJECT", id: cleanId },
+        })
+      );
     }
+
+    // 2. Broadcast deletion across all connected devices via Supabase Realtime
+    if (supabase) {
+      try {
+        const client = supabase;
+        const syncChannel = client.channel("portfolio-sync");
+        syncChannel.subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            syncChannel.send({
+              type: "broadcast",
+              event: "sync_event",
+              payload: { action: "DELETE_PROJECT", id: cleanId },
+            }).then(() => {
+              client.removeChannel(syncChannel);
+            });
+          }
+        });
+      } catch {}
+    }
+
     return { success: true };
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Error deleting project";
@@ -401,6 +476,11 @@ export async function fetchCertificates(): Promise<Certificate[]> {
 
       // Return actual database state directly (even if empty [])
       if (data) {
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem("portfolio_cached_certificates", JSON.stringify(data));
+          } catch {}
+        }
         return data;
       }
     } catch (e) {
@@ -427,8 +507,36 @@ export async function saveCertificate(cert: Certificate): Promise<{ success: boo
     if (typeof window !== "undefined") {
       localStorage.removeItem("portfolio_certificates");
       localStorage.setItem("portfolio_sync_trigger", Date.now().toString());
-      window.dispatchEvent(new Event("portfolio_updated"));
+      localStorage.setItem(
+        "portfolio_sync_action",
+        JSON.stringify({ type: "MUTATE_CERTIFICATE", id: cert.id, timestamp: Date.now() })
+      );
+      window.dispatchEvent(
+        new CustomEvent("portfolio_updated", {
+          detail: { action: "MUTATE_CERTIFICATE", id: cert.id },
+        })
+      );
     }
+
+    // Broadcast change across all connected clients via Supabase Realtime
+    if (supabase) {
+      try {
+        const client = supabase;
+        const syncChannel = client.channel("portfolio-sync");
+        syncChannel.subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            syncChannel.send({
+              type: "broadcast",
+              event: "sync_event",
+              payload: { action: "MUTATE_CERTIFICATE", id: cert.id },
+            }).then(() => {
+              client.removeChannel(syncChannel);
+            });
+          }
+        });
+      } catch {}
+    }
+
     return { success: true };
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Error saving certificate";
@@ -461,11 +569,53 @@ export async function removeCertificate(id: string): Promise<{ success: boolean;
       return { success: false, error: error.message };
     }
 
+    // 1. Local storage & in-app event sync
     if (typeof window !== "undefined") {
       localStorage.removeItem("portfolio_certificates");
       localStorage.setItem("portfolio_sync_trigger", Date.now().toString());
-      window.dispatchEvent(new Event("portfolio_updated"));
+      localStorage.setItem(
+        "portfolio_sync_action",
+        JSON.stringify({ type: "DELETE_CERTIFICATE", id: cleanId, timestamp: Date.now() })
+      );
+      try {
+        const cached = localStorage.getItem("portfolio_cached_certificates");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed)) {
+            localStorage.setItem(
+              "portfolio_cached_certificates",
+              JSON.stringify(parsed.filter((c: Certificate) => c.id !== cleanId))
+            );
+          }
+        }
+      } catch {}
+
+      window.dispatchEvent(
+        new CustomEvent("portfolio_updated", {
+          detail: { action: "DELETE_CERTIFICATE", id: cleanId },
+        })
+      );
     }
+
+    // 2. Broadcast deletion across all connected devices via Supabase Realtime
+    if (supabase) {
+      try {
+        const client = supabase;
+        const syncChannel = client.channel("portfolio-sync");
+        syncChannel.subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            syncChannel.send({
+              type: "broadcast",
+              event: "sync_event",
+              payload: { action: "DELETE_CERTIFICATE", id: cleanId },
+            }).then(() => {
+              client.removeChannel(syncChannel);
+            });
+          }
+        });
+      } catch {}
+    }
+
     return { success: true };
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Error deleting certificate";

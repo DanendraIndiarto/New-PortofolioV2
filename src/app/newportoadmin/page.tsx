@@ -142,17 +142,49 @@ export default function AdminPage() {
     loadAll();
 
     // 1. Listen to instant in-app update event (same window/tab) & cross-tab storage
-    const handleSync = () => {
+    const handleSync = (e?: Event) => {
+      if (e instanceof CustomEvent && e.detail) {
+        if (e.detail.action === "DELETE_PROJECT" && e.detail.id) {
+          setProjects((prev) => prev.filter((p) => p.id !== e.detail.id));
+        } else if (e.detail.action === "DELETE_CERTIFICATE" && e.detail.id) {
+          setCertificates((prev) => prev.filter((c) => c.id !== e.detail.id));
+        }
+      }
       loadAll();
     };
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "portfolio_sync_action" && e.newValue) {
+        try {
+          const actionData = JSON.parse(e.newValue);
+          if (actionData.type === "DELETE_PROJECT" && actionData.id) {
+            setProjects((prev) => prev.filter((p) => p.id !== actionData.id));
+          } else if (actionData.type === "DELETE_CERTIFICATE" && actionData.id) {
+            setCertificates((prev) => prev.filter((c) => c.id !== actionData.id));
+          }
+        } catch {}
+      }
+      loadAll();
+    };
+
     window.addEventListener("portfolio_updated", handleSync);
-    window.addEventListener("storage", handleSync);
+    window.addEventListener("storage", handleStorageChange);
 
     // 2. Supabase Realtime live sync across devices and dashboard
     let channel: ReturnType<NonNullable<typeof supabase>["channel"]> | null = null;
     if (isSupabaseConfigured && supabase) {
       channel = supabase
-        .channel("admin-realtime-sync")
+        .channel("portfolio-sync")
+        // Broadcast listener for fastest cross-device sync
+        .on("broadcast", { event: "sync_event" }, (msg) => {
+          const payload = msg.payload as { action?: string; id?: string };
+          if (payload?.action === "DELETE_PROJECT" && payload.id) {
+            setProjects((prev) => prev.filter((p) => p.id !== payload.id));
+          } else if (payload?.action === "DELETE_CERTIFICATE" && payload.id) {
+            setCertificates((prev) => prev.filter((c) => c.id !== payload.id));
+          }
+          loadAll();
+        })
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "projects" },
@@ -223,7 +255,7 @@ export default function AdminPage() {
 
     return () => {
       window.removeEventListener("portfolio_updated", handleSync);
-      window.removeEventListener("storage", handleSync);
+      window.removeEventListener("storage", handleStorageChange);
       if (channel && supabase) {
         supabase.removeChannel(channel);
       }
@@ -854,7 +886,7 @@ export default function AdminPage() {
                 <div className="relative w-36 h-36 mx-auto rounded-2xl overflow-hidden border-2 border-emerald-500/40 p-1 bg-slate-900 shadow-xl mb-4 group/preview">
                   <div className="relative w-full h-full rounded-xl overflow-hidden bg-slate-800">
                     <Image
-                      src={profile.avatar_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80"}
+                      src={profile.avatar_url || "https://ntffmjnovbjbcktcisoo.supabase.co/storage/v1/object/public/portfolio-assets/avatars/1790367455704-euqzo0.jpg"}
                       alt="Avatar Preview"
                       fill
                       className="object-cover group-hover/preview:scale-105 transition-transform duration-300"
@@ -1774,7 +1806,7 @@ VALUES (
   'Junior Backend Developer',
   'Junior Backend Developer & Database Management',
   'Halo, saya Danendra Athallah Indiarto. Berfokus pada perancangan RESTful API yang efisien, pengelolaan database MySQL, serta manajemen server menggunakan Linux Ubuntu dan PM2. Memiliki pengalaman dalam integrasi database relasional, otomasi deployment menggunakan GitHub Actions, dan pembuatan aplikasi web modern.',
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
+  'https://ntffmjnovbjbcktcisoo.supabase.co/storage/v1/object/public/portfolio-assets/avatars/1790367455704-euqzo0.jpg',
   '#contact',
   '6282334027274',
   'danendra.athallah@gmail.com',

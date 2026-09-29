@@ -24,7 +24,6 @@ export default function Navbar({ profile }: NavbarProps) {
   const navLinks = [
     { name: "Tentang", href: "#about" },
     { name: "Tech Stack", href: "#tech-stack" },
-    { name: "Pengalaman", href: "#experience" },
     { name: "Proyek", href: "#projects" },
     { name: "Sertifikat", href: "#certificates" },
     { name: "Kontak", href: "#contact" },

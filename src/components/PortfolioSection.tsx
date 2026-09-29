@@ -18,7 +18,7 @@ export default function PortfolioSection({ projects }: PortfolioSectionProps) {
         <div className="flex flex-col items-center text-center mb-16 space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono">
             <FolderGit2 className="w-3.5 h-3.5" />
-            <span>03 // KARYA &amp; PROYEK PILIHAN</span>
+            <span>02 // KARYA &amp; PROYEK PILIHAN</span>
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight">
             Karya &amp; <span className="text-gradient-emerald">Proyek Backend</span>

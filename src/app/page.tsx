@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import AboutSection from "@/components/AboutSection";
-import ExperienceSection from "@/components/ExperienceSection";
 import PortfolioSection from "@/components/PortfolioSection";
 import CertificatesSection from "@/components/CertificatesSection";
 import ContactSection from "@/components/ContactSection";
@@ -13,7 +12,6 @@ import {
   DEFAULT_PROFILE, 
   DEFAULT_PROJECTS, 
   DEFAULT_CERTIFICATES, 
-  DEFAULT_EXPERIENCES,
   fetchProfile,
   fetchProjects,
   fetchCertificates
@@ -166,7 +164,6 @@ export default function Home() {
       <main className="flex-1">
         <Hero profile={profile} />
         <AboutSection profile={profile} />
-        <ExperienceSection experiences={DEFAULT_EXPERIENCES} />
         <PortfolioSection projects={projects} />
         <CertificatesSection certificates={certificates} />
         <ContactSection profile={profile} />

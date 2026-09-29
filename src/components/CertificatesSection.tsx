@@ -20,7 +20,7 @@ export default function CertificatesSection({ certificates }: CertificatesSectio
         <div className="flex flex-col items-center text-center mb-16 space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono">
             <Award className="w-3.5 h-3.5" />
-            <span>04 // SERTIFIKASI &amp; LISENSI RESMI</span>
+            <span>03 // SERTIFIKASI &amp; LISENSI RESMI</span>
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight">
             Sertifikasi &amp; <span className="text-gradient-emerald">Lisensi Terverifikasi</span>

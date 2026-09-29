@@ -1,4 +1,4 @@
-import { Profile, Project, Certificate, Experience } from "@/types";
+import { Profile, Project, Certificate } from "@/types";
 import { supabase, isSupabaseConfigured } from "./supabase";
 
 export const DEFAULT_PROFILE: Profile = {
@@ -17,39 +17,6 @@ export const DEFAULT_PROFILE: Profile = {
   instagram_url: "https://www.instagram.com/d.atllh",
   formspree_id: "mjykellp",
 };
-
-export const DEFAULT_EXPERIENCES: Experience[] = [
-  {
-    id: "exp-1",
-    role: "Junior Backend Developer",
-    company: "Proyek & Pengembangan Sistem Web",
-    period: "2023 - Sekarang",
-    type: "Freelance & Project-Based",
-    location: "Malang, Indonesia",
-    description: "Merancang dan membangun endpoint RESTful API menggunakan Node.js (Express.js & NestJS) dengan integrasi database relasional MySQL yang terstruktur.",
-    highlights: [
-      "Mengembangkan skema database MySQL yang ternormalisasi untuk efisiensi penyimpanan dan integritas relasi data",
-      "Mengonfigurasi dan mengelola server Linux Ubuntu menggunakan PM2 Process Manager untuk menjaga uptime aplikasi",
-      "Mengintegrasikan pipeline CI/CD GitHub Actions untuk otomatisasi pengujian kode dan deployment ke server",
-    ],
-    technologies: ["Node.js", "Express.js", "NestJS", "MySQL", "Linux Ubuntu", "PM2", "GitHub Actions", "Git"],
-  },
-  {
-    id: "exp-2",
-    role: "Web & Database Management Specialist",
-    company: "Pengembangan Aplikasi Bisnis",
-    period: "2022 - 2023",
-    type: "Project-Based",
-    location: "Malang, Indonesia",
-    description: "Mengembangkan aplikasi web kasir dan sistem manajemen dokumen digital yang terhubung langsung dengan RESTful API.",
-    highlights: [
-      "Mengoptimalkan query SQL (SELECT, JOIN, INDEXING) untuk mempercepat pengambilan data transaksi penjualan",
-      "Mengembangkan modul otentikasi pengguna berbasis token JWT untuk keamanan hak akses data",
-      "Melakukan pengujian endpoint API menggunakan Postman untuk menjamin keakuratan respon data JSON",
-    ],
-    technologies: ["JavaScript", "TypeScript", "Node.js", "MySQL", "React", "Postman", "Git"],
-  },
-];
 
 export const DEFAULT_PROJECTS: Project[] = [
   {

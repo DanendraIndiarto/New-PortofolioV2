@@ -40,15 +40,3 @@ export interface Certificate {
   skills?: string[];
   created_at?: string;
 }
-
-export interface Experience {
-  id: string;
-  role: string;
-  company: string;
-  period: string;
-  type: string;
-  location: string;
-  description: string;
-  highlights: string[];
-  technologies: string[];
-}

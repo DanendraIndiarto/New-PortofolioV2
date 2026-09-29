@@ -14,7 +14,14 @@ export const isSupabaseConfigured = Boolean(
 
 // Graceful client instance
 export const supabase: SupabaseClient | null = isSupabaseConfigured
-  ? createClient(supabaseUrl, supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache",
+        },
+      },
+    })
   : null;
 
 /**

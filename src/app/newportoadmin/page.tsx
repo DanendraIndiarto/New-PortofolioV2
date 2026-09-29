@@ -37,7 +37,7 @@ import {
   saveCertificate, 
   removeCertificate 
 } from "@/lib/data";
-import { isSupabaseConfigured, uploadMedia, testSupabaseConnection } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured, uploadMedia, testSupabaseConnection } from "@/lib/supabase";
 import { Profile, Project, Certificate } from "@/types";
 
 export default function AdminPage() {
@@ -76,6 +76,10 @@ export default function AdminPage() {
   const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE);
   const [projects, setProjects] = useState<Project[]>(DEFAULT_PROJECTS);
   const [certificates, setCertificates] = useState<Certificate[]>(DEFAULT_CERTIFICATES);
+
+  // Deletion tracking states (for loading spinners & disabling delete buttons)
+  const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
+  const [deletingCertId, setDeletingCertId] = useState<string | null>(null);
 
   // Edit states for existing items
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
@@ -116,7 +120,7 @@ export default function AdminPage() {
   });
   const [skillsInput, setSkillsInput] = useState("Node.js, RESTful API, MySQL, Linux Ubuntu");
 
-  // Load live data
+  // Load live data & subscribe to real-time changes
   useEffect(() => {
     async function loadAll() {
       try {
@@ -133,9 +137,97 @@ export default function AdminPage() {
       }
     }
 
-    if (isAuthenticated) {
+    if (!isAuthenticated) return;
+
+    loadAll();
+
+    // 1. Listen to instant in-app update event (same window/tab) & cross-tab storage
+    const handleSync = () => {
       loadAll();
+    };
+    window.addEventListener("portfolio_updated", handleSync);
+    window.addEventListener("storage", handleSync);
+
+    // 2. Supabase Realtime live sync across devices and dashboard
+    let channel: ReturnType<NonNullable<typeof supabase>["channel"]> | null = null;
+    if (isSupabaseConfigured && supabase) {
+      channel = supabase
+        .channel("admin-realtime-sync")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "projects" },
+          (payload) => {
+            if (payload.eventType === "DELETE") {
+              const oldId = (payload.old as { id?: string })?.id;
+              if (oldId) {
+                setProjects((prev) => prev.filter((p) => p.id !== oldId));
+              } else {
+                fetchProjects().then(setProjects);
+              }
+            } else if (payload.eventType === "INSERT") {
+              const newRow = payload.new as Project;
+              if (newRow?.id) {
+                setProjects((prev) => {
+                  if (prev.some((p) => p.id === newRow.id)) return prev;
+                  return [newRow, ...prev];
+                });
+              }
+            } else if (payload.eventType === "UPDATE") {
+              const updatedRow = payload.new as Project;
+              if (updatedRow?.id) {
+                setProjects((prev) =>
+                  prev.map((p) => (p.id === updatedRow.id ? updatedRow : p))
+                );
+              }
+            }
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "certificates" },
+          (payload) => {
+            if (payload.eventType === "DELETE") {
+              const oldId = (payload.old as { id?: string })?.id;
+              if (oldId) {
+                setCertificates((prev) => prev.filter((c) => c.id !== oldId));
+              } else {
+                fetchCertificates().then(setCertificates);
+              }
+            } else if (payload.eventType === "INSERT") {
+              const newRow = payload.new as Certificate;
+              if (newRow?.id) {
+                setCertificates((prev) => {
+                  if (prev.some((c) => c.id === newRow.id)) return prev;
+                  return [newRow, ...prev];
+                });
+              }
+            } else if (payload.eventType === "UPDATE") {
+              const updatedRow = payload.new as Certificate;
+              if (updatedRow?.id) {
+                setCertificates((prev) =>
+                  prev.map((c) => (c.id === updatedRow.id ? updatedRow : c))
+                );
+              }
+            }
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "profile" },
+          () => {
+            fetchProfile().then(setProfile);
+          }
+        )
+        .subscribe();
     }
+
+    return () => {
+      window.removeEventListener("portfolio_updated", handleSync);
+      window.removeEventListener("storage", handleSync);
+      if (channel && supabase) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [isAuthenticated]);
 
   const showFeedback = (type: "success" | "error", message: string) => {
@@ -364,16 +456,27 @@ export default function AdminPage() {
 
   // Delete Project
   const handleDeleteProject = async (id: string) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus proyek ini?")) return;
-    const res = await removeProject(id);
-    if (res.success) {
-      setProjects((prev) => prev.filter((p) => p.id !== id));
-      if (editingProjectId === id) {
-        handleCancelEditProject();
+    if (!id || deletingProjectId) return;
+    if (!confirm("Apakah Anda yakin ingin menghapus proyek ini secara permanen dari database Supabase?")) return;
+
+    setDeletingProjectId(id);
+    try {
+      const res = await removeProject(id);
+      if (res.success) {
+        // Immediate local state update for real-time responsiveness
+        setProjects((prev) => prev.filter((p) => p.id !== id));
+        if (editingProjectId === id) {
+          handleCancelEditProject();
+        }
+        showFeedback("success", "Proyek berhasil dihapus secara permanen dari database Supabase.");
+      } else {
+        showFeedback("error", res.error || "Gagal menghapus proyek dari Supabase.");
       }
-      showFeedback("success", "Proyek berhasil dihapus.");
-    } else {
-      showFeedback("error", res.error || "Gagal menghapus proyek.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Terjadi kesalahan saat menghapus proyek";
+      showFeedback("error", msg);
+    } finally {
+      setDeletingProjectId(null);
     }
   };
 
@@ -467,16 +570,27 @@ export default function AdminPage() {
 
   // Delete Certificate
   const handleDeleteCertificate = async (id: string) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus sertifikat ini?")) return;
-    const res = await removeCertificate(id);
-    if (res.success) {
-      setCertificates((prev) => prev.filter((c) => c.id !== id));
-      if (editingCertId === id) {
-        handleCancelEditCertificate();
+    if (!id || deletingCertId) return;
+    if (!confirm("Apakah Anda yakin ingin menghapus sertifikat ini secara permanen dari database Supabase?")) return;
+
+    setDeletingCertId(id);
+    try {
+      const res = await removeCertificate(id);
+      if (res.success) {
+        // Immediate local state update for real-time responsiveness
+        setCertificates((prev) => prev.filter((c) => c.id !== id));
+        if (editingCertId === id) {
+          handleCancelEditCertificate();
+        }
+        showFeedback("success", "Sertifikat berhasil dihapus secara permanen dari database Supabase.");
+      } else {
+        showFeedback("error", res.error || "Gagal menghapus sertifikat dari Supabase.");
       }
-      showFeedback("success", "Sertifikat berhasil dihapus.");
-    } else {
-      showFeedback("error", res.error || "Gagal menghapus sertifikat.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Terjadi kesalahan saat menghapus sertifikat";
+      showFeedback("error", msg);
+    } finally {
+      setDeletingCertId(null);
     }
   };
 
@@ -1183,65 +1297,81 @@ export default function AdminPage() {
                 <span className="text-xs font-mono text-slate-500">Live DB</span>
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {projects.map((proj) => (
-                  <div
-                    key={proj.id}
-                    className="glass-card rounded-xl p-4 border border-slate-800 flex items-start gap-4 relative group"
-                  >
-                    <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-slate-900 shrink-0">
-                      <Image
-                        src={proj.image_url}
-                        alt={proj.title}
-                        fill
-                        className="object-cover"
-                        unoptimized
-                      />
-                    </div>
+              {projects.length === 0 ? (
+                <div className="text-center py-12 px-4 rounded-xl glass-card border border-slate-800 text-slate-400 font-mono text-xs">
+                  Belum ada proyek terdaftar di database Supabase. Gunakan formulir di atas untuk menambahkan proyek baru.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {projects.map((proj) => (
+                    <div
+                      key={proj.id}
+                      className={`glass-card rounded-xl p-4 border border-slate-800 flex items-start gap-4 relative group transition-opacity duration-200 ${
+                        deletingProjectId === proj.id ? "opacity-40 pointer-events-none" : ""
+                      }`}
+                    >
+                      <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-slate-900 shrink-0">
+                        <Image
+                          src={proj.image_url}
+                          alt={proj.title}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      </div>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <h4 className="text-sm font-bold text-white truncate">
-                          {proj.title}
-                        </h4>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => handleEditProject(proj)}
-                            className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors"
-                            title="Edit proyek"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteProject(proj.id)}
-                            className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors"
-                            title="Hapus proyek"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="text-sm font-bold text-white truncate">
+                            {proj.title}
+                          </h4>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleEditProject(proj)}
+                              disabled={Boolean(deletingProjectId)}
+                              className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Edit proyek"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteProject(proj.id)}
+                              disabled={deletingProjectId === proj.id}
+                              className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Hapus proyek permanen"
+                            >
+                              {deletingProjectId === proj.id ? (
+                                <div className="w-3.5 h-3.5 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <Trash2 className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-slate-400 line-clamp-2 mt-1">
+                          {proj.description}
+                        </p>
+
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {proj.tech_stack.slice(0, 3).map((t, i) => (
+                            <span key={i} className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300">
+                              {t}
+                            </span>
+                          ))}
+                          {proj.tech_stack.length > 3 && (
+                            <span className="text-[10px] font-mono text-slate-500">
+                              +{proj.tech_stack.length - 3}
+                            </span>
+                          )}
                         </div>
                       </div>
-
-                      <p className="text-xs text-slate-400 line-clamp-2 mt-1">
-                        {proj.description}
-                      </p>
-
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {proj.tech_stack.slice(0, 3).map((t, i) => (
-                          <span key={i} className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300">
-                            {t}
-                          </span>
-                        ))}
-                        {proj.tech_stack.length > 3 && (
-                          <span className="text-[10px] font-mono text-slate-500">
-                            +{proj.tech_stack.length - 3}
-                          </span>
-                        )}
-                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
           </div>
@@ -1414,64 +1544,80 @@ export default function AdminPage() {
                 <span className="text-xs font-mono text-slate-500">Live DB</span>
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {certificates.map((cert) => (
-                  <div
-                    key={cert.id}
-                    className="glass-card rounded-xl p-4 border border-slate-800 flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="relative w-full h-32 rounded-lg overflow-hidden bg-slate-900 mb-3">
-                        <Image
-                          src={cert.image_url}
-                          alt={cert.title}
-                          fill
-                          className="object-cover"
-                          unoptimized
-                        />
+              {certificates.length === 0 ? (
+                <div className="text-center py-12 px-4 rounded-xl glass-card border border-slate-800 text-slate-400 font-mono text-xs">
+                  Belum ada sertifikat terdaftar di database Supabase. Gunakan formulir di atas untuk menambahkan sertifikat baru.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {certificates.map((cert) => (
+                    <div
+                      key={cert.id}
+                      className={`glass-card rounded-xl p-4 border border-slate-800 flex flex-col justify-between transition-opacity duration-200 ${
+                        deletingCertId === cert.id ? "opacity-40 pointer-events-none" : ""
+                      }`}
+                    >
+                      <div>
+                        <div className="relative w-full h-32 rounded-lg overflow-hidden bg-slate-900 mb-3">
+                          <Image
+                            src={cert.image_url}
+                            alt={cert.title}
+                            fill
+                            className="object-cover"
+                            unoptimized
+                          />
+                        </div>
+                        <div className="text-[11px] font-mono text-emerald-400">
+                          {cert.issuer} • {cert.issue_date}
+                        </div>
+                        <h4 className="text-sm font-bold text-white mt-1 line-clamp-1">
+                          {cert.title}
+                        </h4>
                       </div>
-                      <div className="text-[11px] font-mono text-emerald-400">
-                        {cert.issuer} • {cert.issue_date}
-                      </div>
-                      <h4 className="text-sm font-bold text-white mt-1 line-clamp-1">
-                        {cert.title}
-                      </h4>
-                    </div>
 
-                    <div className="pt-3 mt-3 border-t border-slate-800/80 flex items-center justify-between">
-                      {cert.credential_url ? (
-                        <a
-                          href={cert.credential_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-xs font-mono text-emerald-400 hover:underline flex items-center gap-1"
-                        >
-                          Verifikasi <ExternalLink className="w-3 h-3" />
-                        </a>
-                      ) : (
-                        <span className="text-xs font-mono text-slate-500">No link</span>
-                      )}
+                      <div className="pt-3 mt-3 border-t border-slate-800/80 flex items-center justify-between">
+                        {cert.credential_url ? (
+                          <a
+                            href={cert.credential_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-xs font-mono text-emerald-400 hover:underline flex items-center gap-1"
+                          >
+                            Verifikasi <ExternalLink className="w-3 h-3" />
+                          </a>
+                        ) : (
+                          <span className="text-xs font-mono text-slate-500">No link</span>
+                        )}
 
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleEditCertificate(cert)}
-                          className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors"
-                          title="Edit sertifikat"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteCertificate(cert.id)}
-                          className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors"
-                          title="Hapus sertifikat"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleEditCertificate(cert)}
+                            disabled={Boolean(deletingCertId)}
+                            className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Edit sertifikat"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCertificate(cert.id)}
+                            disabled={deletingCertId === cert.id}
+                            className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Hapus sertifikat permanen"
+                          >
+                            {deletingCertId === cert.id ? (
+                              <div className="w-3.5 h-3.5 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Trash2 className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
           </div>

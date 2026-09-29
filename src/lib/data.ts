@@ -300,22 +300,14 @@ export async function fetchProjects(): Promise<Project[]> {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (!error && data && data.length > 0) {
-        return data;
-      }
-
-      // If connected but table is empty, auto-seed default projects
-      if (!error && data && data.length === 0) {
-        const { error: seedError } = await supabase
-          .from("projects")
-          .upsert(DEFAULT_PROJECTS);
-        if (!seedError) {
-          return DEFAULT_PROJECTS;
-        }
-      }
-
       if (error) {
         console.warn("Supabase fetchProjects note:", error.message);
+        return DEFAULT_PROJECTS;
+      }
+
+      // Return actual database state directly (even if empty [])
+      if (data) {
+        return data;
       }
     } catch (e) {
       console.warn("Supabase fetchProjects error:", e);
@@ -340,6 +332,7 @@ export async function saveProject(project: Project): Promise<{ success: boolean;
 
     if (typeof window !== "undefined") {
       localStorage.removeItem("portfolio_projects");
+      localStorage.setItem("portfolio_sync_trigger", Date.now().toString());
       window.dispatchEvent(new Event("portfolio_updated"));
     }
     return { success: true };
@@ -357,17 +350,32 @@ export async function removeProject(id: string): Promise<{ success: boolean; err
     };
   }
 
+  const cleanId = String(id || "").trim();
+  if (!cleanId) {
+    return { success: false, error: "ID proyek tidak valid." };
+  }
+
   try {
-    const { error } = await supabase.from("projects").delete().eq("id", id);
-    if (error) return { success: false, error: error.message };
+    const { error } = await supabase
+      .from("projects")
+      .delete()
+      .eq("id", cleanId)
+      .select();
+
+    if (error) {
+      console.error("Supabase removeProject error:", error);
+      return { success: false, error: error.message };
+    }
 
     if (typeof window !== "undefined") {
       localStorage.removeItem("portfolio_projects");
+      localStorage.setItem("portfolio_sync_trigger", Date.now().toString());
       window.dispatchEvent(new Event("portfolio_updated"));
     }
     return { success: true };
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Error deleting project";
+    console.error("removeProject exception:", e);
     return { success: false, error: msg };
   }
 }
@@ -386,22 +394,14 @@ export async function fetchCertificates(): Promise<Certificate[]> {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (!error && data && data.length > 0) {
-        return data;
-      }
-
-      // If connected but table is empty, auto-seed default certificates
-      if (!error && data && data.length === 0) {
-        const { error: seedError } = await supabase
-          .from("certificates")
-          .upsert(DEFAULT_CERTIFICATES);
-        if (!seedError) {
-          return DEFAULT_CERTIFICATES;
-        }
-      }
-
       if (error) {
         console.warn("Supabase fetchCertificates note:", error.message);
+        return DEFAULT_CERTIFICATES;
+      }
+
+      // Return actual database state directly (even if empty [])
+      if (data) {
+        return data;
       }
     } catch (e) {
       console.warn("Supabase fetchCertificates error:", e);
@@ -426,6 +426,7 @@ export async function saveCertificate(cert: Certificate): Promise<{ success: boo
 
     if (typeof window !== "undefined") {
       localStorage.removeItem("portfolio_certificates");
+      localStorage.setItem("portfolio_sync_trigger", Date.now().toString());
       window.dispatchEvent(new Event("portfolio_updated"));
     }
     return { success: true };
@@ -443,17 +444,32 @@ export async function removeCertificate(id: string): Promise<{ success: boolean;
     };
   }
 
+  const cleanId = String(id || "").trim();
+  if (!cleanId) {
+    return { success: false, error: "ID sertifikat tidak valid." };
+  }
+
   try {
-    const { error } = await supabase.from("certificates").delete().eq("id", id);
-    if (error) return { success: false, error: error.message };
+    const { error } = await supabase
+      .from("certificates")
+      .delete()
+      .eq("id", cleanId)
+      .select();
+
+    if (error) {
+      console.error("Supabase removeCertificate error:", error);
+      return { success: false, error: error.message };
+    }
 
     if (typeof window !== "undefined") {
       localStorage.removeItem("portfolio_certificates");
+      localStorage.setItem("portfolio_sync_trigger", Date.now().toString());
       window.dispatchEvent(new Event("portfolio_updated"));
     }
     return { success: true };
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Error deleting certificate";
+    console.error("removeCertificate exception:", e);
     return { success: false, error: msg };
   }
 }

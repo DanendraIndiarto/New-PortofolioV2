@@ -161,8 +161,8 @@ export default function RootLayout({
       {
         "@type": "WebSite",
         "@id": `${siteUrl}/#website`,
-        url: siteUrl,
-        name: "Danendra Athallah Indiarto - Junior Backend Developer Portfolio",
+        name: "Danendra Athallah Indiarto",
+        url: "https://indiartodev.vercel.app/",
         description:
           "Portofolio resmi Danendra Athallah Indiarto - Junior Backend Developer.",
         publisher: {
@@ -182,7 +182,9 @@ export default function RootLayout({
       <head>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+          }}
         />
       </head>
       <body className="min-h-screen bg-[#070b12] text-slate-100 font-sans antialiased selection:bg-emerald-500/30 selection:text-emerald-300">

@@ -10,11 +10,32 @@ interface NavbarProps {
   profile?: Profile;
 }
 
+function syncBrowserFavicon(next: "dark" | "light") {
+  const href = next === "light" ? "/icon-light.png?v=2" : "/icon.png?v=2";
+  const existing = document.querySelectorAll<HTMLLinkElement>(
+    'link[rel="icon"], link[rel="shortcut icon"]'
+  );
+  if (existing.length > 0) {
+    existing.forEach((link) => {
+      link.type = "image/png";
+      link.media = "";
+      link.href = href;
+    });
+    return;
+  }
+  const dynamicLink = document.createElement("link");
+  dynamicLink.rel = "icon";
+  dynamicLink.type = "image/png";
+  dynamicLink.href = href;
+  document.head.appendChild(dynamicLink);
+}
+
 function subscribeTheme(onStoreChange: () => void) {
   const onStorage = (e: StorageEvent) => {
     if (e.key === "portfolio_theme" && (e.newValue === "light" || e.newValue === "dark")) {
       document.documentElement.dataset.theme = e.newValue;
       document.documentElement.classList.toggle("dark", e.newValue === "dark");
+      syncBrowserFavicon(e.newValue);
       onStoreChange();
     }
   };
@@ -44,6 +65,10 @@ export default function Navbar({ profile }: NavbarProps) {
   );
 
   useEffect(() => {
+    syncBrowserFavicon(theme);
+  }, [theme]);
+
+  useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 18);
     };
@@ -55,6 +80,7 @@ export default function Navbar({ profile }: NavbarProps) {
     const next = theme === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = next;
     document.documentElement.classList.toggle("dark", next === "dark");
+    syncBrowserFavicon(next);
     try {
       localStorage.setItem("portfolio_theme", next);
     } catch {}

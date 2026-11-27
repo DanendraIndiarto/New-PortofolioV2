@@ -74,22 +74,28 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: "/icon.png",
+        url: "/icon.svg?v=2",
+        type: "image/svg+xml",
+      },
+      {
+        url: "/icon.png?v=2",
         sizes: "192x192",
         type: "image/png",
       },
       {
-        url: "/favicon.ico",
+        url: "/icon-light.png?v=2",
+        sizes: "192x192",
+        type: "image/png",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        url: "/favicon.ico?v=2",
         sizes: "48x48",
         type: "image/x-icon",
       },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
-      },
     ],
-    shortcut: "/favicon.ico",
-    apple: "/icon.png",
+    shortcut: "/favicon.ico?v=2",
+    apple: "/icon.png?v=2",
   },
   openGraph: {
     type: "website",

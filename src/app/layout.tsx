@@ -75,11 +75,16 @@ export const metadata: Metadata = {
         type: "image/png",
       },
       {
+        url: "/favicon.ico",
+        sizes: "48x48",
+        type: "image/x-icon",
+      },
+      {
         url: "/icon.svg",
         type: "image/svg+xml",
       },
     ],
-    shortcut: "/icon.png",
+    shortcut: "/favicon.ico",
     apple: "/icon.png",
   },
   openGraph: {

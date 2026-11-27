@@ -93,7 +93,7 @@ export default function Hero({ profile }: HeroProps) {
             <p className="text-sm sm:text-base lg:text-[1.05rem] leading-relaxed text-[var(--prism-ink-soft)] max-w-xl">
               {profile.title || "Junior Backend Developer"} —{" "}
               {bioDescription ||
-                "Berfokus pada perancangan RESTful API dengan Node.js, pengelolaan database MySQL & PostgreSQL di dalam Docker, Directus, otomasi Node-RED, serta manajemen server Linux Ubuntu dan PM2."}
+                "Berfokus pada perancangan RESTful API dengan Node.js, TypeScript, NestJS, Express.js, dan Prisma ORM, pengelolaan database PostgreSQL, MySQL, & MariaDB, integrasi Directus serta Node-RED, hingga manajemen server Linux Ubuntu dengan Docker dan PM2."}
             </p>
 
             {/* Primary & Secondary CTAs */}

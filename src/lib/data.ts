@@ -1,12 +1,15 @@
 import { Profile, Project, Certificate } from "@/types";
 import { supabase, isSupabaseConfigured } from "./supabase";
 
+const LEGACY_DEFAULT_BIO =
+  "Halo, saya Danendra Athallah Indiarto. Berfokus pada perancangan RESTful API yang efisien, pengelolaan database MySQL, serta manajemen server menggunakan Linux Ubuntu dan PM2. Memiliki pengalaman dalam integrasi database relasional, otomasi deployment menggunakan GitHub Actions, dan pembuatan aplikasi web modern.";
+
 export const DEFAULT_PROFILE: Profile = {
   id: "main-profile",
   name: "Danendra Athallah Indiarto",
   title: "Junior Backend Developer",
-  tagline: "Junior Backend Developer & Database Management",
-  bio: "Halo, saya Danendra Athallah Indiarto. Berfokus pada perancangan RESTful API dengan Node.js, pengelolaan database MySQL & PostgreSQL di dalam Docker, Directus, otomasi Node-RED, serta manajemen server Linux Ubuntu dan PM2. Berpengalaman dalam integrasi database relasional, containerization, otomasi deployment GitHub Actions, dan aplikasi web modern.",
+  tagline: "Junior Backend Developer & DevOps Engineer",
+  bio: "Halo, saya Danendra Athallah Indiarto. Berfokus pada perancangan RESTful API dengan Node.js, TypeScript, NestJS, Express.js, dan Prisma ORM, pengelolaan database PostgreSQL, MySQL, & MariaDB, integrasi Directus serta Node-RED, hingga manajemen server Linux Ubuntu menggunakan Docker, Docker Compose, Nginx, Apache2, dan PM2.",
   avatar_url: "https://ntffmjnovbjbcktcisoo.supabase.co/storage/v1/object/public/portfolio-assets/avatars/1790367455704-euqzo0.jpg",
   resume_url: "#contact",
   whatsapp_number: "6282334027274",
@@ -116,9 +119,25 @@ export async function fetchProfile(): Promise<Profile> {
         .maybeSingle();
 
       if (!error && data) {
+        const normalizedBio = (data.bio || "").replace(/\s+/g, " ").trim();
+        const isLegacyBio =
+          !normalizedBio ||
+          normalizedBio === LEGACY_DEFAULT_BIO ||
+          (normalizedBio.includes(
+            "pengelolaan database MySQL, serta manajemen server menggunakan Linux Ubuntu dan PM2"
+          ) &&
+            !/postgresql|docker|directus|node-red/i.test(normalizedBio));
+
+        const normalizedTagline = (data.tagline || "").trim();
+        const isLegacyTagline =
+          !normalizedTagline ||
+          normalizedTagline === "Junior Backend Developer & Database Management";
+
         return {
           ...DEFAULT_PROFILE,
           ...data,
+          tagline: isLegacyTagline ? DEFAULT_PROFILE.tagline : data.tagline,
+          bio: isLegacyBio ? DEFAULT_PROFILE.bio : data.bio,
         };
       }
 

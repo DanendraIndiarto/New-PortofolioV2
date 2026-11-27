@@ -21,26 +21,26 @@ import { Profile, Project, Certificate } from "@/types";
 
 export default function Home() {
   const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE);
-  const [projects, setProjects] = useState<Project[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const cached = localStorage.getItem("portfolio_cached_projects");
-        if (cached) return JSON.parse(cached);
-      } catch {}
-    }
-    return DEFAULT_PROJECTS;
-  });
-  const [certificates, setCertificates] = useState<Certificate[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const cached = localStorage.getItem("portfolio_cached_certificates");
-        if (cached) return JSON.parse(cached);
-      } catch {}
-    }
-    return DEFAULT_CERTIFICATES;
-  });
+  const [projects, setProjects] = useState<Project[]>(DEFAULT_PROJECTS);
+  const [certificates, setCertificates] = useState<Certificate[]>(DEFAULT_CERTIFICATES);
 
   useEffect(() => {
+    // Hydrate cached projects/certificates after mount to avoid SSR hydration mismatch
+    Promise.resolve().then(() => {
+      try {
+        const cachedProj = localStorage.getItem("portfolio_cached_projects");
+        if (cachedProj) {
+          const parsed = JSON.parse(cachedProj);
+          if (Array.isArray(parsed)) setProjects(parsed);
+        }
+        const cachedCert = localStorage.getItem("portfolio_cached_certificates");
+        if (cachedCert) {
+          const parsed = JSON.parse(cachedCert);
+          if (Array.isArray(parsed)) setCertificates(parsed);
+        }
+      } catch {}
+    });
+
     async function loadData() {
       try {
         const [profData, projData, certData] = await Promise.all([

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -207,16 +208,16 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${plusJakartaSans.variable} ${jetbrainsMono.variable} scroll-smooth dark`}
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      <body className="min-h-screen font-sans antialiased selection:bg-indigo-500/25 selection:text-indigo-400">
+        <Script id="theme-init" strategy="beforeInteractive">
+          {themeInitScript}
+        </Script>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
           }}
         />
-      </head>
-      <body className="min-h-screen font-sans antialiased selection:bg-indigo-500/25 selection:text-indigo-400">
         <div className="relative z-10 flex flex-col min-h-screen">
           {children}
         </div>

@@ -1,21 +1,36 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <style>
+    .bg1 { stop-color: #090D18; }
+    .bg2 { stop-color: #161E36; }
+    .ring { stroke: #818CF8; stroke-opacity: 0.38; }
+    .letter-d { fill: #F8FAFC; }
+    .g1 { stop-color: #818CF8; }
+    .g2 { stop-color: #38BDF8; }
+    .g3 { stop-color: #34D399; }
+    @media (prefers-color-scheme: light) {
+      .bg1 { stop-color: #FFFFFF; }
+      .bg2 { stop-color: #E7EEFF; }
+      .ring { stroke: #4338CA; stroke-opacity: 0.28; }
+      .letter-d { fill: #0F172A; }
+      .g1 { stop-color: #3730A3; }
+      .g2 { stop-color: #2563EB; }
+      .g3 { stop-color: #0D9488; }
+    }
+  </style>
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#070b12" />
-      <stop offset="100%" stop-color="#0f172a" />
+      <stop offset="0%" class="bg1" />
+      <stop offset="100%" class="bg2" />
     </linearGradient>
-    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#10b981" />
-      <stop offset="100%" stop-color="#06b6d4" />
+    <linearGradient id="wingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" class="g1" />
+      <stop offset="50%" class="g2" />
+      <stop offset="100%" class="g3" />
     </linearGradient>
   </defs>
-  <!-- Background Kotak Melengkung -->
   <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
-  <!-- Aksen Border Luar -->
-  <rect x="16" y="16" width="480" height="480" rx="96" fill="none" stroke="#10b981" stroke-width="8" stroke-opacity="0.3" />
-  <!-- Huruf D Desain Backend / Terminal -->
-  <path d="M140 120 h100 c75 0 130 50 130 136 s-55 136 -130 136 h-100 z" fill="none" stroke="url(#glow)" stroke-width="36" stroke-linecap="round" stroke-linejoin="round" />
-  <path d="M176 180 v152" fill="none" stroke="#ffffff" stroke-width="28" stroke-linecap="round" />
-  <!-- Titik Aksen Terminal .dev -->
-  <circle cx="360" cy="356" r="22" fill="#10b981" />
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="none" stroke-width="10" class="ring" />
+  <path d="M132 124 H276 L354 206 L312 388 H84 L132 124 Z M184 180 L156 332 H258 L286 226 L246 180 Z" class="letter-d" fill-rule="evenodd" />
+  <polygon points="378,124 434,124 386,388 330,388" fill="url(#wingGrad)" />
+  <polygon points="84,412 318,412 308,434 74,434" fill="url(#wingGrad)" />
 </svg>

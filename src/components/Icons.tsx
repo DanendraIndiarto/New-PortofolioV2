@@ -1,4 +1,59 @@
-import React from "react";
+import React, { useId } from "react";
+
+export function BrandLogo({ className = "w-9 h-9" }: { className?: string }) {
+  const uid = useId().replace(/:/g, "");
+  const bgId = `cw-bg-${uid}`;
+  const wingId = `cw-wing-${uid}`;
+
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 512 512"
+      className={className}
+      role="img"
+      aria-label="Logo Danendra Athallah Indiarto"
+    >
+      <defs>
+        <linearGradient id={bgId} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style={{ stopColor: "var(--logo-bg-1)" }} />
+          <stop offset="100%" style={{ stopColor: "var(--logo-bg-2)" }} />
+        </linearGradient>
+        <linearGradient id={wingId} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style={{ stopColor: "var(--logo-g1)" }} />
+          <stop offset="50%" style={{ stopColor: "var(--logo-g2)" }} />
+          <stop offset="100%" style={{ stopColor: "var(--logo-g3)" }} />
+        </linearGradient>
+      </defs>
+      <rect width="512" height="512" rx="112" fill={`url(#${bgId})`} />
+      <rect
+        x="16"
+        y="16"
+        width="480"
+        height="480"
+        rx="96"
+        fill="none"
+        strokeWidth="10"
+        style={{
+          stroke: "var(--logo-ring)",
+          strokeOpacity: "var(--logo-ring-opacity)",
+        }}
+      />
+      <path
+        d="M132 124 H276 L354 206 L312 388 H84 L132 124 Z M184 180 L156 332 H258 L286 226 L246 180 Z"
+        fillRule="evenodd"
+        style={{ fill: "var(--logo-primary)" }}
+      />
+      <polygon
+        points="378,124 434,124 386,388 330,388"
+        fill={`url(#${wingId})`}
+      />
+      <polygon
+        points="84,412 318,412 308,434 74,434"
+        fill={`url(#${wingId})`}
+      />
+    </svg>
+  );
+}
 
 export function GithubIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (

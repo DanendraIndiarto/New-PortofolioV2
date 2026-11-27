@@ -2,367 +2,646 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { 
-  Database, 
-  Server, 
-  Cpu, 
-  Terminal, 
+import {
+  Database,
+  Server,
+  Terminal,
+  Wrench,
   MapPin,
   Mail,
   GitBranch,
   ShieldCheck,
-  Code2
+  Code2,
+  ZoomIn,
+  Layers,
+  Workflow,
+  Box,
+  Globe,
+  Cloud,
+  Cpu,
+  HardDrive,
+  Send,
 } from "lucide-react";
-import { GithubIcon, LinkedinIcon, InstagramIcon, WhatsAppIcon } from "@/components/Icons";
+import {
+  GithubIcon,
+  LinkedinIcon,
+  InstagramIcon,
+  WhatsAppIcon,
+} from "@/components/Icons";
+import ImageLightbox from "@/components/ImageLightbox";
 import { Profile } from "@/types";
 
 interface AboutSectionProps {
   profile: Profile;
 }
 
-const PERMANENT_AVATAR_URL = "https://ntffmjnovbjbcktcisoo.supabase.co/storage/v1/object/public/portfolio-assets/avatars/1790367455704-euqzo0.jpg";
+const PERMANENT_AVATAR_URL =
+  "https://ntffmjnovbjbcktcisoo.supabase.co/storage/v1/object/public/portfolio-assets/avatars/1790367455704-euqzo0.jpg";
 
 export default function AboutSection({ profile }: AboutSectionProps) {
   const [avatarFailed, setAvatarFailed] = useState(false);
-  // Ensure profile avatar takes the real photo permanently and never loads any generic stock/AI photo
-  const rawUrl = profile.avatar_url && !profile.avatar_url.includes("images.unsplash.com") 
-    ? profile.avatar_url 
-    : PERMANENT_AVATAR_URL;
+  const [avatarOpen, setAvatarOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<string>("all");
+
+  const rawUrl =
+    profile.avatar_url && !profile.avatar_url.includes("images.unsplash.com")
+      ? profile.avatar_url
+      : PERMANENT_AVATAR_URL;
   const avatarUrl = rawUrl || PERMANENT_AVATAR_URL;
+  const cleanWaNumber = (profile.whatsapp_number || "").replace(/\D/g, "");
 
-  const cleanWaNumber = profile.whatsapp_number.replace(/\D/g, "");
-
-  // Tech stack filtered purely to Danendra's CV
   const techCategories = [
     {
-      title: "Backend & Runtimes",
+      id: "backend",
+      title: "Backend Development",
+      shortLabel: "Backend",
       icon: Terminal,
-      color: "from-emerald-500/20 to-teal-500/10",
-      border: "border-emerald-500/30",
-      badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
       skills: [
-        { name: "Node.js", desc: "Runtime JavaScript sisi server untuk eksekusi API asinkron yang cepat" },
-        { name: "JavaScript (ES6+)", desc: "Pemrograman asynchronous, promises, callback, dan modularitas kode" },
-        { name: "TypeScript", desc: "Penulisan kode berskala terstruktur dengan tipe data statis dan interface" },
+        {
+          name: "Node.js",
+          icon: Terminal,
+          desc: "Runtime JavaScript sisi server untuk eksekusi API asinkron yang cepat dan skalabel",
+        },
+        {
+          name: "TypeScript",
+          icon: Code2,
+          desc: "Penulisan kode backend terstruktur dengan sistem tipe statis yang aman",
+        },
+        {
+          name: "JavaScript",
+          icon: Code2,
+          desc: "Pemrograman ES6+, asynchronous flow, promises, dan modularisasi layanan",
+        },
+        {
+          name: "NestJS",
+          icon: Layers,
+          desc: "Framework backend modular berbasis controller, service, guard, dan DTO",
+        },
+        {
+          name: "Express.js",
+          icon: Terminal,
+          desc: "Framework minimalis untuk routing, middleware, dan layanan RESTful API",
+        },
+        {
+          name: "RESTful API",
+          icon: Globe,
+          desc: "Perancangan endpoint standar HTTP, autentikasi, validasi, dan format JSON konsisten",
+        },
+        {
+          name: "Prisma ORM",
+          icon: Database,
+          desc: "Schema modeling, migrasi database, dan query type-safe ke database relasional",
+        },
       ],
     },
     {
-      title: "Frameworks & REST API",
-      icon: Code2,
-      color: "from-teal-500/20 to-cyan-500/10",
-      border: "border-teal-500/30",
-      badgeColor: "bg-teal-500/10 text-teal-400 border-teal-500/20",
-      skills: [
-        { name: "Express.js", desc: "Framework minimalis untuk perancangan routing dan middleware RESTful API" },
-        { name: "NestJS", desc: "Framework arsitektur modular enterprise berbasis controller, provider, dan DTO" },
-        { name: "RESTful APIs", desc: "Desain endpoint standar HTTP methods, format respon JSON, dan status code" },
-      ],
-    },
-    {
-      title: "Database Management",
+      id: "database",
+      title: "Database & Low-Code / IoT",
+      shortLabel: "Database & IoT",
       icon: Database,
-      color: "from-cyan-500/20 to-blue-500/10",
-      border: "border-cyan-500/30",
-      badgeColor: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
       skills: [
-        { name: "MySQL", desc: "Sistem basis data relasional, desain tabel relasional, dan integritas data" },
-        { name: "SQL Querying", desc: "Penulisan query DDL/DML, JOIN multi-tabel, agregasi, dan indexing data" },
-        { name: "Database Schema Design", desc: "Perancangan Entity Relationship Diagram (ERD) dan normalisasi database" },
+        {
+          name: "PostgreSQL",
+          icon: Database,
+          desc: "Database relasional open-source andal termasuk deployment di dalam container Docker",
+        },
+        {
+          name: "MySQL",
+          icon: Database,
+          desc: "Pengelolaan basis data relasional, indexing, dan konsistensi transaksi data",
+        },
+        {
+          name: "MariaDB",
+          icon: Database,
+          desc: "Administrasi server database relasional MariaDB untuk layanan web produksi",
+        },
+        {
+          name: "Directus",
+          icon: Layers,
+          desc: "Headless CMS & data platform dengan akses API instan dan manajemen hak akses",
+        },
+        {
+          name: "Node-RED",
+          icon: Workflow,
+          desc: "Flow-based programming untuk otomasi alur data, integrasi API, dan skenario IoT",
+        },
+        {
+          name: "Database Design",
+          icon: HardDrive,
+          desc: "Perancangan ERD, normalisasi tabel, relasi foreign key, dan optimasi skema",
+        },
       ],
     },
     {
-      title: "Server, DevOps & Tools",
+      id: "devops",
+      title: "Server & DevOps",
+      shortLabel: "Server & DevOps",
       icon: Server,
-      color: "from-blue-500/20 to-indigo-500/10",
-      border: "border-blue-500/30",
-      badgeColor: "bg-blue-500/10 text-blue-400 border-blue-500/20",
       skills: [
-        { name: "Linux Ubuntu", desc: "Navigasi CLI Linux, manajemen file permission, dan konfigurasi server" },
-        { name: "PM2 Process Manager", desc: "Pengelolaan proses aplikasi background, zero-downtime reload & auto-restart" },
-        { name: "CI/CD GitHub Actions", desc: "Otomatisasi pengujian alur kerja Git dan proses deployment ke server" },
-        { name: "Git & Version Control", desc: "Kolaborasi repository, branching, pull request, dan tracking revisi" },
-        { name: "React & Next.js", desc: "Integrasi frontend web modern yang terkoneksi langsung dengan REST API" },
+        {
+          name: "Ubuntu Linux",
+          icon: Terminal,
+          desc: "Administrasi server berbasis CLI, manajemen user, permission, dan systemd service",
+        },
+        {
+          name: "Docker",
+          icon: Box,
+          desc: "Containerization layanan backend, database, dan dependensi aplikasi secara terisolasi",
+        },
+        {
+          name: "Docker Compose",
+          icon: Layers,
+          desc: "Orkestrasi multi-container seperti PostgreSQL, Directus, Node-RED, dan API service",
+        },
+        {
+          name: "Nginx",
+          icon: Globe,
+          desc: "Konfigurasi reverse proxy, virtual host, SSL/HTTPS, dan routing traffic produksi",
+        },
+        {
+          name: "Apache2",
+          icon: Globe,
+          desc: "Pengelolaan web server Apache2, konfigurasi virtual host, dan modul server",
+        },
+        {
+          name: "PM2",
+          icon: Cpu,
+          desc: "Process manager Node.js untuk daemon background, monitoring, dan zero-downtime reload",
+        },
+        {
+          name: "Webmin",
+          icon: Server,
+          desc: "Administrasi sistem dan layanan server Linux melalui antarmuka web panel",
+        },
+        {
+          name: "VirtualBox",
+          icon: HardDrive,
+          desc: "Simulasi mesin virtual server Linux untuk pengujian infrastruktur dan jaringan lokal",
+        },
+        {
+          name: "VPS Management",
+          icon: Server,
+          desc: "Setup VPS dari nol, keamanan SSH, firewall, backup, dan pemeliharaan uptime",
+        },
+      ],
+    },
+    {
+      id: "tools",
+      title: "Tools & Workflow",
+      shortLabel: "Tools & Workflow",
+      icon: Wrench,
+      skills: [
+        {
+          name: "Git",
+          icon: GitBranch,
+          desc: "Version control, manajemen branch, merge, dan pelacakan histori perubahan kode",
+        },
+        {
+          name: "GitHub",
+          icon: GitBranch,
+          desc: "Kolaborasi repository, pull request, manajemen issue, dan otomasi GitHub Actions",
+        },
+        {
+          name: "Postman",
+          icon: Send,
+          desc: "Pengujian endpoint REST API, manajemen environment, dan dokumentasi koleksi request",
+        },
+        {
+          name: "Vercel",
+          icon: Cloud,
+          desc: "Deployment aplikasi Next.js/frontend cepat dengan preview otomatis per commit",
+        },
+        {
+          name: "Railway",
+          icon: Cloud,
+          desc: "Hosting layanan backend, worker, dan database cloud yang praktis dan terintegrasi Git",
+        },
+        {
+          name: "VS Code",
+          icon: Code2,
+          desc: "Code editor utama untuk pengembangan backend, debugging, dan integrasi terminal",
+        },
       ],
     },
   ];
 
+  const totalSkillsCount = techCategories.reduce(
+    (sum, cat) => sum + cat.skills.length,
+    0
+  );
+
+  const selectedCategoryObj =
+    activeCategory === "all"
+      ? null
+      : techCategories.find((c) => c.id === activeCategory) || null;
+
   return (
-    <section id="about" className="py-24 relative border-t border-slate-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Section Header */}
-        <div className="flex flex-col items-center text-center mb-16 space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono">
-            <Cpu className="w-3.5 h-3.5" />
-            <span>01 // PROFIL &amp; KEAHLIAN UTAMA</span>
+    <section id="about" className="py-20 relative">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Section Heading */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
+          <div>
+            <div className="text-xs font-mono font-bold uppercase tracking-widest prism-grad-text mb-2">
+              01 // ARSITEKTUR &amp; PROFIL
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[var(--prism-ink)]">
+              Dirancang untuk Kecepatan &amp; Stabilitas
+            </h2>
           </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight">
-            Tentang Saya &amp; <span className="text-gradient-emerald">Backend Ecosystem</span>
-          </h2>
-          <p className="text-slate-400 max-w-2xl text-sm sm:text-base">
-            Mendedikasikan fokus pada perancangan API yang efisien, pengelolaan basis data relasional MySQL, dan manajemen server Linux yang stabil.
+          <p className="text-xs sm:text-sm text-[var(--prism-ink-muted)] max-w-sm">
+            Fokus pada RESTful API bersih, database MySQL &amp; PostgreSQL,
+            containerization Docker, Directus, Node-RED, serta server Ubuntu
+            &amp; PM2.
           </p>
         </div>
 
-        {/* Bento Grid: Profile Card + Core Focus Areas */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-16">
-          
-          {/* Bento Item 1: Profile Card with Dynamic Supabase Avatar */}
-          <div className="lg:col-span-5 glass-card rounded-2xl p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden group">
-            <div className="absolute -top-20 -right-20 w-56 h-56 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none group-hover:bg-emerald-500/25 transition-all duration-500" />
+        {/* Asymmetric 12-Col Gradient Bento */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-5 mb-16">
+          {/* Bento 1 (7 Cols): Signature Rich Gradient Core Specialty */}
+          <div
+            className="md:col-span-7 rounded-3xl p-7 sm:p-8 text-white flex flex-col justify-between gap-6"
+            style={{
+              background: "var(--prism-grad-bento-main)",
+              boxShadow: "var(--prism-shadow)",
+            }}
+          >
+            <div className="flex items-center justify-between text-xs font-mono opacity-90">
+              <span className="px-3 py-1 rounded-full bg-white/15 backdrop-blur-sm">
+                CORE SPECIALTY
+              </span>
+              <span>01 / BACKEND &amp; DB</span>
+            </div>
 
             <div>
-              {/* Header */}
-              <div className="flex items-center justify-between mb-6">
-                <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20">
-                  {profile.title || "Junior Backend Developer"}
-                </span>
-                <span className="text-xs font-mono text-slate-400 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
-                  Portofolio Aktif
-                </span>
-              </div>
+              <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-snug">
+                RESTful API, Directus &amp; Database Relasional
+              </h3>
+              <p className="text-xs sm:text-sm text-white/85 mt-3 leading-relaxed">
+                Perancangan skema relasional MySQL &amp; PostgreSQL (ERD &amp;
+                normalisasi), integrasi Headless CMS Directus, serta routing
+                middleware Express.js &amp; modul NestJS dengan validasi DTO dan
+                penanganan error terpusat.
+              </p>
+            </div>
 
-              {/* Photo & Identity */}
-              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-6">
-                <div className="relative group/avatar">
-                  <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-2 border-emerald-500/40 p-1 bg-slate-900 shadow-xl group-hover/avatar:border-emerald-400 transition-all duration-300">
-                    <div className="relative w-full h-full rounded-xl overflow-hidden bg-slate-800 flex items-center justify-center">
-                      {avatarFailed ? (
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-slate-850 to-emerald-950 text-emerald-400">
-                          <div className="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center font-mono font-bold text-xl text-emerald-300">
-                            DI
-                          </div>
-                          <span className="text-[10px] font-mono text-emerald-400/80 mt-1">Danendra</span>
-                        </div>
-                      ) : (
+            <div className="flex flex-wrap gap-2 text-xs font-mono">
+              {[
+                "Node.js",
+                "NestJS",
+                "Express.js",
+                "Directus",
+                "PostgreSQL",
+                "MySQL",
+              ].map((tag) => (
+                <span
+                  key={tag}
+                  className="px-3 py-1 rounded-lg bg-white/15 backdrop-blur-sm"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Bento 2 (5 Cols): Adaptive Gradient Docker & Server Tile */}
+          <div
+            className="md:col-span-5 rounded-3xl p-7 border border-[var(--prism-border)] flex flex-col justify-between gap-5"
+            style={{
+              background: "var(--prism-grad-bento-side)",
+              boxShadow: "var(--prism-shadow)",
+            }}
+          >
+            <div className="flex items-center justify-between text-xs font-mono">
+              <span className="font-bold prism-grad-text">
+                02 / DOCKER &amp; VPS
+              </span>
+              <span className="text-[var(--prism-ink-muted)]">
+                Docker · Ubuntu · PM2
+              </span>
+            </div>
+
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-[var(--prism-surface)] border border-[var(--prism-border)] flex items-center justify-center text-[var(--prism-accent)] mb-4">
+                <Server className="w-5 h-5" />
+              </div>
+              <h3 className="text-xl font-extrabold tracking-tight text-[var(--prism-ink)]">
+                Docker Container, PostgreSQL &amp; Linux Ubuntu
+              </h3>
+              <p className="text-xs sm:text-sm mt-2 leading-relaxed text-[var(--prism-ink-soft)]">
+                Menjalankan PostgreSQL, Directus, dan service backend secara
+                terisolasi di dalam Docker container, dipadukan manajemen VPS
+                Ubuntu &amp; PM2 agar layanan stabil.
+              </p>
+            </div>
+
+            <div className="pt-3 border-t border-[var(--prism-border)] flex items-center justify-between text-xs font-mono">
+              <span className="text-[var(--prism-ink-muted)]">
+                Container Ops
+              </span>
+              <span className="font-bold text-[var(--prism-accent-3)]">
+                Docker &amp; PM2 Ready
+              </span>
+            </div>
+          </div>
+
+          {/* Bento 3 (5 Cols): Node-RED & CI/CD Automation */}
+          <div className="md:col-span-5 prism-card prism-card-hover rounded-3xl p-7 flex flex-col justify-between gap-5">
+            <div className="flex items-center justify-between text-xs font-mono">
+              <span className="font-bold prism-grad-text">
+                03 / FLOW &amp; CI/CD
+              </span>
+              <GitBranch className="w-4 h-4 text-[var(--prism-accent)]" />
+            </div>
+
+            <div>
+              <h3 className="text-xl font-bold text-[var(--prism-ink)]">
+                Node-RED Automation &amp; GitHub Actions
+              </h3>
+              <p className="text-xs sm:text-sm mt-2 leading-relaxed text-[var(--prism-ink-soft)]">
+                Membangun alur integrasi data &amp; otomasi workflow dengan
+                Node-RED serta pipeline CI/CD GitHub Actions untuk deployment
+                otomatis ke server.
+              </p>
+            </div>
+
+            <div className="px-3.5 py-2 rounded-xl bg-[var(--prism-surface-soft)] border border-[var(--prism-border)] text-xs font-mono text-[var(--prism-ink-soft)]">
+              Node-RED Flow &middot; docker compose up -d
+            </div>
+          </div>
+
+          {/* Bento 4 (7 Cols): Profile Card with Real Supabase Avatar + Socials */}
+          <div className="md:col-span-7 prism-card prism-card-hover rounded-3xl p-7 flex flex-col justify-between gap-6">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
+              {/* Clickable Framed Avatar */}
+              <button
+                type="button"
+                onClick={() => !avatarFailed && setAvatarOpen(true)}
+                title="Klik untuk melihat foto profil penuh"
+                className="relative shrink-0 group/avatar cursor-pointer text-left"
+              >
+                <div
+                  className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl p-[2px]"
+                  style={{ background: "var(--prism-grad-btn)" }}
+                >
+                  <div className="relative w-full h-full rounded-[14px] overflow-hidden bg-[var(--prism-surface-solid)] flex items-center justify-center">
+                    {avatarFailed ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center font-mono font-extrabold text-xl prism-grad-text">
+                        DI
+                      </div>
+                    ) : (
+                      <>
                         <Image
                           src={avatarUrl}
-                          alt={profile.name || "Foto Profil Danendra Athallah Indiarto"}
+                          alt={
+                            profile.name ||
+                            "Foto Profil Danendra Athallah Indiarto"
+                          }
                           fill
-                          className="object-cover group-hover/avatar:scale-105 transition-transform duration-500"
+                          className="object-cover"
                           unoptimized
                           priority
                           onError={() => setAvatarFailed(true)}
                         />
-                      )}
-                    </div>
-                  </div>
-                  {/* Verified badge */}
-                  <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-slate-950 p-1.5 rounded-lg shadow-md border-2 border-[#0e1524]">
-                    <ShieldCheck className="w-4 h-4" />
-                  </div>
-                </div>
-
-                <div className="text-center sm:text-left space-y-1">
-                  <h3 className="text-2xl font-bold text-white tracking-tight">
-                    {profile.name}
-                  </h3>
-                  <p className="text-sm font-mono text-emerald-400 font-medium">
-                    {profile.title}
-                  </p>
-                  <p className="text-xs text-slate-400 flex items-center justify-center sm:justify-start gap-1 pt-1 font-mono">
-                    <MapPin className="w-3.5 h-3.5 text-slate-500" />
-                    <span>{profile.location || "Malang, Indonesia"}</span>
-                  </p>
-                  <p className="text-xs text-slate-400 flex items-center justify-center sm:justify-start gap-1 font-mono">
-                    <Mail className="w-3.5 h-3.5 text-slate-500" />
-                    <span>{profile.email}</span>
-                  </p>
-                </div>
-              </div>
-
-              {/* Bio Paragraph */}
-              <p className="text-slate-300 text-sm leading-relaxed mb-6 font-normal">
-                {profile.bio}
-              </p>
-            </div>
-
-            {/* Social Media Buttons (WhatsApp, Instagram, GitHub, LinkedIn) */}
-            <div className="pt-4 border-t border-slate-800/80">
-              <div className="text-[11px] font-mono text-slate-400 mb-2 uppercase tracking-wider">
-                Hubungi &amp; Media Sosial:
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <a
-                  href={`https://wa.me/${cleanWaNumber || "6282334027274"}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-slate-900/90 hover:bg-slate-850 text-slate-300 hover:text-emerald-400 border border-slate-800 hover:border-emerald-500/40 transition-colors text-xs font-mono"
-                  title="WhatsApp"
-                >
-                  <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>WhatsApp</span>
-                </a>
-
-                <a
-                  href={profile.instagram_url || "https://instagram.com"}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-slate-900/90 hover:bg-slate-850 text-slate-300 hover:text-pink-400 border border-slate-800 hover:border-pink-500/40 transition-colors text-xs font-mono"
-                  title="Instagram"
-                >
-                  <InstagramIcon className="w-3.5 h-3.5 text-pink-400" />
-                  <span>Instagram</span>
-                </a>
-
-                <a
-                  href={profile.github_url || "https://github.com"}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-slate-900/90 hover:bg-slate-850 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-600 transition-colors text-xs font-mono"
-                  title="GitHub"
-                >
-                  <GithubIcon className="w-3.5 h-3.5 text-slate-300" />
-                  <span>GitHub</span>
-                </a>
-
-                <a
-                  href={profile.linkedin_url || "https://linkedin.com"}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-slate-900/90 hover:bg-slate-850 text-slate-300 hover:text-blue-400 border border-slate-800 hover:border-blue-500/40 transition-colors text-xs font-mono"
-                  title="LinkedIn"
-                >
-                  <LinkedinIcon className="w-3.5 h-3.5 text-blue-400" />
-                  <span>LinkedIn</span>
-                </a>
-              </div>
-            </div>
-          </div>
-
-          {/* Bento Item 2: Core Engineering Pillars (MySQL, Node.js/NestJS/Express, Linux Ubuntu/PM2, GitHub Actions) */}
-          <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            
-            <div className="glass-card rounded-2xl p-6 flex flex-col justify-between">
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mb-4">
-                  <Database className="w-5 h-5" />
-                </div>
-                <h4 className="text-base font-semibold text-white mb-2">
-                  Pengelolaan Database MySQL
-                </h4>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Perancangan skema relasional, normalisasi tabel, penulisan query SQL terstruktur (DDL/DML), serta pemeliharaan integritas data aplikasi.
-                </p>
-              </div>
-              <div className="mt-4 pt-3 border-t border-slate-800/80 font-mono text-[11px] text-emerald-400">
-                Relational Schema &amp; Data Integrity
-              </div>
-            </div>
-
-            <div className="glass-card rounded-2xl p-6 flex flex-col justify-between">
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400 flex items-center justify-center mb-4">
-                  <Terminal className="w-5 h-5" />
-                </div>
-                <h4 className="text-base font-semibold text-white mb-2">
-                  Node.js (NestJS &amp; Express.js)
-                </h4>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Membangun endpoint RESTful API modular yang bersih, routing middleware efisien, validasi data request, dan penanganan error terpusat.
-                </p>
-              </div>
-              <div className="mt-4 pt-3 border-t border-slate-800/80 font-mono text-[11px] text-teal-400">
-                Modular RESTful API Architecture
-              </div>
-            </div>
-
-            <div className="glass-card rounded-2xl p-6 flex flex-col justify-between">
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center mb-4">
-                  <Server className="w-5 h-5" />
-                </div>
-                <h4 className="text-base font-semibold text-white mb-2">
-                  Linux Ubuntu &amp; PM2 Manager
-                </h4>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Manajemen server VPS berbasis Linux Ubuntu, konfigurasi PM2 untuk memastikan service backend tetap hidup dengan auto-restart.
-                </p>
-              </div>
-              <div className="mt-4 pt-3 border-t border-slate-800/80 font-mono text-[11px] text-cyan-400">
-                Stable Server Process Uptime
-              </div>
-            </div>
-
-            <div className="glass-card rounded-2xl p-6 flex flex-col justify-between">
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center mb-4">
-                  <GitBranch className="w-5 h-5" />
-                </div>
-                <h4 className="text-base font-semibold text-white mb-2">
-                  CI/CD Actions &amp; Git Workflow
-                </h4>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Otomatisasi pengujian alur kerja Git, manajemen branch repository, dan deployment otomatis menggunakan GitHub Actions ke server.
-                </p>
-              </div>
-              <div className="mt-4 pt-3 border-t border-slate-800/80 font-mono text-[11px] text-blue-400">
-                Automated Delivery Pipeline
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-
-        {/* Detailed Tech Stack Showcase (Purely CV Tools) */}
-        <div id="tech-stack" className="pt-6">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h3 className="text-2xl font-bold text-white tracking-tight">
-                Backend Tech Ecosystem
-              </h3>
-              <p className="text-slate-400 text-xs sm:text-sm mt-1">
-                Keahlian teknologi backend, database MySQL, dan server tools yang dikuasai.
-              </p>
-            </div>
-            <span className="hidden sm:inline-block font-mono text-xs text-slate-500">
-              [ CV Verified Tooling ]
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {techCategories.map((cat, idx) => {
-              const IconComp = cat.icon;
-              return (
-                <div
-                  key={idx}
-                  className="glass-card rounded-2xl p-5 flex flex-col border border-slate-800/80 hover:border-emerald-500/30 transition-all"
-                >
-                  <div className="flex items-center gap-3 mb-4 pb-3 border-b border-slate-800/80">
-                    <div className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-emerald-400">
-                      <IconComp className="w-4 h-4" />
-                    </div>
-                    <h4 className="text-sm font-semibold text-white font-mono">
-                      {cat.title}
-                    </h4>
-                  </div>
-
-                  <div className="space-y-3 flex-1">
-                    {cat.skills.map((skill, sIdx) => (
-                      <div
-                        key={sIdx}
-                        className="p-3 rounded-xl bg-slate-900/60 border border-slate-800/60 hover:border-slate-700/80 transition-all group"
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-semibold text-white group-hover:text-emerald-400 transition-colors">
-                            {skill.name}
+                        <div className="absolute inset-0 bg-black/0 group-hover/avatar:bg-black/35 transition-colors flex items-center justify-center">
+                          <span className="opacity-0 group-hover/avatar:opacity-100 transition-opacity p-2 rounded-full bg-black/70 text-white">
+                            <ZoomIn className="w-4 h-4" />
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-400 leading-tight">
-                          {skill.desc}
-                        </p>
-                      </div>
-                    ))}
+                      </>
+                    )}
                   </div>
                 </div>
-              );
-            })}
+                <div className="absolute -bottom-2 -right-2 p-1.5 rounded-lg prism-grad-btn border-2 border-[var(--prism-surface-solid)]">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                </div>
+              </button>
+
+              {/* Bio & Meta */}
+              <div className="text-center sm:text-left space-y-1.5 min-w-0">
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                  <h3 className="text-xl font-extrabold tracking-tight text-[var(--prism-ink)]">
+                    {profile.name}
+                  </h3>
+                  <span className="text-[11px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-[var(--prism-surface-soft)] border border-[var(--prism-border)] text-[var(--prism-accent)]">
+                    {profile.title}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-1 text-xs font-mono text-[var(--prism-ink-muted)]">
+                  <span className="inline-flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5" />
+                    {profile.location || "Malang, Indonesia"}
+                  </span>
+                  <span className="inline-flex items-center gap-1 truncate">
+                    <Mail className="w-3.5 h-3.5" />
+                    {profile.email}
+                  </span>
+                </div>
+
+                <p className="text-xs sm:text-sm leading-relaxed text-[var(--prism-ink-soft)] pt-1">
+                  {profile.bio}
+                </p>
+              </div>
+            </div>
+
+            {/* Social Strip */}
+            <div className="pt-4 border-t border-[var(--prism-border)] grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
+              <a
+                href={`https://wa.me/${cleanWaNumber || "6282334027274"}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[var(--prism-surface-soft)] border border-[var(--prism-border)] text-[var(--prism-ink)] hover:border-[var(--prism-border-strong)] transition-colors"
+              >
+                <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-500" />
+                <span>WhatsApp</span>
+              </a>
+              <a
+                href={profile.instagram_url || "https://instagram.com"}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[var(--prism-surface-soft)] border border-[var(--prism-border)] text-[var(--prism-ink)] hover:border-[var(--prism-border-strong)] transition-colors"
+              >
+                <InstagramIcon className="w-3.5 h-3.5 text-pink-500" />
+                <span>Instagram</span>
+              </a>
+              <a
+                href={profile.github_url || "https://github.com"}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[var(--prism-surface-soft)] border border-[var(--prism-border)] text-[var(--prism-ink)] hover:border-[var(--prism-border-strong)] transition-colors"
+              >
+                <GithubIcon className="w-3.5 h-3.5" />
+                <span>GitHub</span>
+              </a>
+              <a
+                href={profile.linkedin_url || "https://linkedin.com"}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[var(--prism-surface-soft)] border border-[var(--prism-border)] text-[var(--prism-ink)] hover:border-[var(--prism-border-strong)] transition-colors"
+              >
+                <LinkedinIcon className="w-3.5 h-3.5 text-sky-500" />
+                <span>LinkedIn</span>
+              </a>
+            </div>
           </div>
         </div>
 
+        {/* Interactive Filterable Technical Skills Section */}
+        <div id="tech-stack" className="pt-4">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-7">
+            <div>
+              <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--prism-ink)]">
+                Keahlian Teknis &amp; Tech Stack
+              </h3>
+              <p className="text-xs sm:text-sm text-[var(--prism-ink-muted)] mt-1">
+                Dikelompokkan dalam 4 fokus utama: Backend, Database &amp; IoT,
+                Server &amp; DevOps, serta Tools &amp; Workflow.
+              </p>
+            </div>
+
+            {/* Category Filter Pills */}
+            <div className="flex flex-wrap gap-1.5 text-xs font-mono">
+              <button
+                type="button"
+                onClick={() => setActiveCategory("all")}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold transition-all cursor-pointer ${
+                  activeCategory === "all"
+                    ? "prism-grad-btn"
+                    : "prism-card text-[var(--prism-ink-soft)] hover:text-[var(--prism-ink)]"
+                }`}
+              >
+                <span>Semua</span>
+                <span className="opacity-75">({totalSkillsCount})</span>
+              </button>
+              {techCategories.map((cat) => {
+                const CatIcon = cat.icon;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setActiveCategory(cat.id)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold transition-all cursor-pointer ${
+                      activeCategory === cat.id
+                        ? "prism-grad-btn"
+                        : "prism-card text-[var(--prism-ink-soft)] hover:text-[var(--prism-ink)]"
+                    }`}
+                  >
+                    <CatIcon className="w-3.5 h-3.5" />
+                    <span>{cat.shortLabel}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {selectedCategoryObj ? (
+            /* Detailed View when a Single Category is Selected */
+            <div className="space-y-4">
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2.5">
+                  <selectedCategoryObj.icon className="w-4 h-4 text-[var(--prism-accent)]" />
+                  <h4 className="text-sm font-mono font-bold text-[var(--prism-ink)]">
+                    {selectedCategoryObj.title}
+                  </h4>
+                </div>
+                <span className="text-xs font-mono text-[var(--prism-ink-muted)]">
+                  {selectedCategoryObj.skills.length} keahlian
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {selectedCategoryObj.skills.map((skill) => {
+                  const SkillIcon = skill.icon;
+                  return (
+                    <div
+                      key={skill.name}
+                      className="prism-card prism-card-hover rounded-2xl p-5 flex flex-col justify-between gap-2.5"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-[var(--prism-surface-soft)] border border-[var(--prism-border)] text-[var(--prism-accent)] flex items-center justify-center shrink-0">
+                          <SkillIcon className="w-4 h-4" />
+                        </div>
+                        <h5 className="text-sm font-bold text-[var(--prism-ink)]">
+                          {skill.name}
+                        </h5>
+                      </div>
+                      <p className="text-xs leading-relaxed text-[var(--prism-ink-soft)]">
+                        {skill.desc}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            /* Clean 2x2 Grouped Overview of All 4 Categories */
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {techCategories.map((cat, idx) => {
+                const CatIcon = cat.icon;
+                return (
+                  <div
+                    key={cat.id}
+                    className="prism-card prism-card-hover rounded-3xl p-6 flex flex-col justify-between gap-5"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-3 pb-4 mb-4 border-b border-[var(--prism-border)]">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-10 h-10 rounded-xl bg-[var(--prism-surface-soft)] border border-[var(--prism-border)] text-[var(--prism-accent)] flex items-center justify-center shrink-0">
+                            <CatIcon className="w-5 h-5" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-[10px] font-mono font-bold prism-grad-text">
+                              {`0${idx + 1} // KATEGORI`}
+                            </div>
+                            <h4 className="text-base font-extrabold tracking-tight text-[var(--prism-ink)] truncate">
+                              {cat.title}
+                            </h4>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setActiveCategory(cat.id)}
+                          className="text-[11px] font-mono font-semibold px-2.5 py-1 rounded-lg bg-[var(--prism-surface-soft)] border border-[var(--prism-border)] text-[var(--prism-accent)] hover:border-[var(--prism-border-strong)] transition-colors shrink-0 cursor-pointer"
+                        >
+                          {cat.skills.length} item &rarr;
+                        </button>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        {cat.skills.map((skill) => {
+                          const SkillIcon = skill.icon;
+                          return (
+                            <span
+                              key={skill.name}
+                              title={skill.desc}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--prism-surface-soft)] border border-[var(--prism-border)] text-xs font-semibold text-[var(--prism-ink)] hover:border-[var(--prism-border-strong)] transition-colors"
+                            >
+                              <SkillIcon className="w-3.5 h-3.5 text-[var(--prism-accent)] shrink-0" />
+                              <span>{skill.name}</span>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
+
+      {avatarOpen && (
+        <ImageLightbox
+          src={avatarUrl}
+          alt={profile.name || "Foto Profil Danendra Athallah Indiarto"}
+          title={profile.name || "Danendra Athallah Indiarto"}
+          subtitle={profile.title || "Junior Backend Developer"}
+          badge="FOTO PROFIL"
+          onClose={() => setAvatarOpen(false)}
+        />
+      )}
     </section>
   );
 }

@@ -3,7 +3,7 @@
 @theme {
   --font-sans: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: var(--font-mono), "Courier New", monospace;
-  
+
   --color-neon-emerald: #10b981;
   --color-neon-glow: #059669;
   --color-cyber-black: #070b12;
@@ -14,16 +14,119 @@
   --color-cyber-border-glow: #10b981;
 }
 
-:root {
-  --background: #070b12;
-  --foreground: #f1f5f9;
+/* ============ PRISM STUDIO THEME TOKENS ============ */
+/* Default / Dark Mode: Midnight Aurora */
+:root,
+html[data-theme="dark"] {
+  --background: #080a10;
+  --foreground: #f4f7ff;
+
+  --prism-bg: #080a10;
+  --prism-surface: rgba(17, 21, 33, 0.84);
+  --prism-surface-solid: #111521;
+  --prism-surface-soft: #171d2e;
+  --prism-ink: #f4f7ff;
+  --prism-ink-soft: #bac4dc;
+  --prism-ink-muted: #8490ad;
+  --prism-border: rgba(148, 163, 184, 0.16);
+  --prism-border-strong: rgba(129, 140, 248, 0.45);
+  --prism-accent: #818cf8;
+  --prism-accent-2: #38bdf8;
+  --prism-accent-3: #34d399;
+
+  --prism-page-bg:
+    radial-gradient(ellipse 80% 50% at 14% 0%, rgba(99, 102, 241, 0.24), transparent 58%),
+    radial-gradient(ellipse 70% 45% at 88% 8%, rgba(14, 165, 233, 0.2), transparent 56%),
+    radial-gradient(ellipse 55% 40% at 50% 42%, rgba(16, 185, 129, 0.1), transparent 58%),
+    linear-gradient(180deg, #080a10 0%, #0b0f1a 50%, #080b12 100%);
+
+  --prism-grad-text: linear-gradient(110deg, #a5b4fc 0%, #38bdf8 52%, #34d399 100%);
+  --prism-grad-btn: linear-gradient(110deg, #4f46e5 0%, #2563eb 55%, #06b6d4 100%);
+  --prism-grad-btn-ink: #ffffff;
+  --prism-grad-bento-main: linear-gradient(135deg, #1e1b4b 0%, #1d4ed8 55%, #0891b2 100%);
+  --prism-grad-bento-side: linear-gradient(155deg, #131829 0%, #1e2547 55%, #0f2e36 100%);
+  --prism-grad-proj-1: linear-gradient(135deg, #161c33 0%, #162b4d 55%, #0d3338 100%);
+  --prism-grad-proj-2: linear-gradient(135deg, #1c1635 0%, #251e4a 55%, #331836 100%);
+  --prism-grad-proj-3: linear-gradient(135deg, #102430 0%, #172747 55%, #2b2418 100%);
+  --prism-grad-cta: linear-gradient(135deg, rgba(79, 70, 229, 0.18) 0%, rgba(14, 165, 233, 0.14) 55%, rgba(16, 185, 129, 0.12) 100%);
+
+  --prism-code-bg: #0b0f19;
+  --prism-code-surface: #141b2d;
+  --prism-code-ink: #e6ecf8;
+  --prism-shadow: 0 24px 50px -24px rgba(0, 0, 0, 0.72);
+  --prism-scrollbar-track: #080a10;
+  --prism-scrollbar-thumb: #242d44;
+
+  /* Adaptive Cyber Wing DI Logo (Dark) */
+  --logo-bg-1: #090d18;
+  --logo-bg-2: #161e36;
+  --logo-ring: #818cf8;
+  --logo-ring-opacity: 0.38;
+  --logo-primary: #f8fafc;
+  --logo-g1: #818cf8;
+  --logo-g2: #38bdf8;
+  --logo-g3: #34d399;
+}
+
+/* Light Mode: Dawn Prism */
+html[data-theme="light"] {
+  --background: #f6f7fb;
+  --foreground: #0d111c;
+
+  --prism-bg: #f6f7fb;
+  --prism-surface: rgba(255, 255, 255, 0.88);
+  --prism-surface-solid: #ffffff;
+  --prism-surface-soft: #eef1f8;
+  --prism-ink: #0d111c;
+  --prism-ink-soft: #434b5e;
+  --prism-ink-muted: #656e85;
+  --prism-border: rgba(15, 23, 42, 0.1);
+  --prism-border-strong: rgba(67, 56, 202, 0.32);
+  --prism-accent: #4338ca;
+  --prism-accent-2: #0284c7;
+  --prism-accent-3: #0d9488;
+
+  --prism-page-bg:
+    radial-gradient(ellipse 80% 50% at 12% 0%, rgba(99, 102, 241, 0.2), transparent 58%),
+    radial-gradient(ellipse 70% 45% at 88% 8%, rgba(14, 165, 233, 0.19), transparent 56%),
+    radial-gradient(ellipse 60% 40% at 54% 40%, rgba(251, 146, 60, 0.12), transparent 58%),
+    linear-gradient(180deg, #f8faff 0%, #f3f5fa 50%, #f7f6fc 100%);
+
+  --prism-grad-text: linear-gradient(110deg, #3730a3 0%, #2563eb 52%, #0d9488 100%);
+  --prism-grad-btn: linear-gradient(110deg, #3730a3 0%, #2563eb 60%, #0ea5e9 100%);
+  --prism-grad-btn-ink: #ffffff;
+  --prism-grad-bento-main: linear-gradient(135deg, #1e1b4b 0%, #1d4ed8 58%, #0284c7 100%);
+  --prism-grad-bento-side: linear-gradient(155deg, #ffffff 0%, #e0e7ff 52%, #ccfbf1 100%);
+  --prism-grad-proj-1: linear-gradient(135deg, #eef2ff 0%, #dbeafe 50%, #ccfbf1 100%);
+  --prism-grad-proj-2: linear-gradient(135deg, #f5f3ff 0%, #e0e7ff 55%, #fce7f3 100%);
+  --prism-grad-proj-3: linear-gradient(135deg, #ecfeff 0%, #dbeafe 55%, #fef3c7 100%);
+  --prism-grad-cta: linear-gradient(135deg, rgba(67, 56, 202, 0.08) 0%, rgba(14, 165, 233, 0.1) 55%, rgba(249, 115, 22, 0.08) 100%);
+
+  --prism-code-bg: #111625;
+  --prism-code-surface: #1a2136;
+  --prism-code-ink: #e6ecf8;
+  --prism-shadow: 0 18px 40px -24px rgba(30, 41, 89, 0.22);
+  --prism-scrollbar-track: #eef1f8;
+  --prism-scrollbar-thumb: #cbd5e1;
+
+  /* Adaptive Cyber Wing DI Logo (Light) */
+  --logo-bg-1: #ffffff;
+  --logo-bg-2: #e7eeff;
+  --logo-ring: #4338ca;
+  --logo-ring-opacity: 0.26;
+  --logo-primary: #0f172a;
+  --logo-g1: #3730a3;
+  --logo-g2: #2563eb;
+  --logo-g3: #0d9488;
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
+  background: var(--prism-page-bg);
+  background-color: var(--prism-bg);
+  color: var(--prism-ink);
   font-family: var(--font-sans);
   overflow-x: hidden;
+  transition: background-color 240ms ease, color 240ms ease;
 }
 
 /* Custom Scrollbar */
@@ -33,29 +136,79 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #070b12;
+  background: var(--prism-scrollbar-track);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: var(--prism-scrollbar-thumb);
   border-radius: 9999px;
-  border: 2px solid #070b12;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #10b981;
+  background: var(--prism-accent);
 }
 
-/* Glassmorphism and Card Utilities */
+/* Prism Studio Utilities */
+.prism-card {
+  background: var(--prism-surface);
+  border: 1px solid var(--prism-border);
+  box-shadow: var(--prism-shadow);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), border-color 200ms ease, box-shadow 200ms ease, background-color 220ms ease;
+}
+
+.prism-card-hover:hover {
+  transform: translateY(-3px);
+  border-color: var(--prism-border-strong);
+}
+
+.prism-grad-text {
+  background: var(--prism-grad-text);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.prism-grad-btn {
+  background: var(--prism-grad-btn);
+  color: var(--prism-grad-btn-ink);
+  box-shadow: 0 12px 26px -10px rgba(37, 99, 235, 0.52);
+  transition: transform 160ms ease, filter 160ms ease, box-shadow 160ms ease;
+}
+
+.prism-grad-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.07);
+}
+
+.prism-input {
+  background: var(--prism-surface-solid);
+  border: 1px solid var(--prism-border);
+  color: var(--prism-ink);
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.prism-input::placeholder {
+  color: var(--prism-ink-muted);
+}
+
+.prism-input:focus {
+  outline: none;
+  border-color: var(--prism-accent);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.16);
+}
+
+/* Legacy Utilities preserved for Admin (/newportoadmin) & 404 (/not-found) */
 .glass-panel {
-  background: rgba(14, 21, 36, 0.75);
+  background: rgba(14, 21, 36, 0.78);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .glass-card {
-  background: linear-gradient(135deg, rgba(18, 28, 46, 0.8) 0%, rgba(13, 20, 33, 0.6) 100%);
+  background: linear-gradient(135deg, rgba(18, 28, 46, 0.85) 0%, rgba(13, 20, 33, 0.72) 100%);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -68,45 +221,8 @@ body {
   transform: translateY(-2px);
 }
 
-.emerald-glow {
-  box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.35);
-}
-
-.emerald-glow-sm {
-  box-shadow: 0 0 15px -3px rgba(16, 185, 129, 0.3);
-}
-
-.text-gradient {
-  background: linear-gradient(135deg, #ffffff 20%, #a7f3d0 70%, #10b981 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
 .text-gradient-emerald {
   background: linear-gradient(135deg, #34d399 0%, #10b981 50%, #059669 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-}
-
-/* Code block terminal styling */
-.terminal-window {
-  background: #080d17;
-  border: 1px solid #1e293b;
-  border-radius: 12px;
-  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.8);
-}
-
-@keyframes pulseGlow {
-  0%, 100% {
-    opacity: 0.4;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.8;
-    transform: scale(1.03);
-  }
-}
-
-.animate-pulse-glow {
-  animation: pulseGlow 4s infinite ease-in-out;
 }

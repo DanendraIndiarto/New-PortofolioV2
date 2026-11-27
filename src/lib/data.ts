@@ -6,7 +6,7 @@ export const DEFAULT_PROFILE: Profile = {
   name: "Danendra Athallah Indiarto",
   title: "Junior Backend Developer",
   tagline: "Junior Backend Developer & Database Management",
-  bio: "Halo, saya Danendra Athallah Indiarto. Berfokus pada perancangan RESTful API yang efisien, pengelolaan database MySQL, serta manajemen server menggunakan Linux Ubuntu dan PM2. Memiliki pengalaman dalam integrasi database relasional, otomasi deployment menggunakan GitHub Actions, dan pembuatan aplikasi web modern.",
+  bio: "Halo, saya Danendra Athallah Indiarto. Berfokus pada perancangan RESTful API dengan Node.js, pengelolaan database MySQL & PostgreSQL di dalam Docker, Directus, otomasi Node-RED, serta manajemen server Linux Ubuntu dan PM2. Berpengalaman dalam integrasi database relasional, containerization, otomasi deployment GitHub Actions, dan aplikasi web modern.",
   avatar_url: "https://ntffmjnovbjbcktcisoo.supabase.co/storage/v1/object/public/portfolio-assets/avatars/1790367455704-euqzo0.jpg",
   resume_url: "#contact",
   whatsapp_number: "6282334027274",

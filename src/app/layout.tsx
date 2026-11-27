@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     template: "%s | Danendra Athallah Indiarto",
   },
   description:
-    "Portofolio profesional Danendra Athallah Indiarto - Junior Backend Developer yang berfokus pada perancangan RESTful API yang efisien, pengelolaan database MySQL, serta manajemen server menggunakan Linux Ubuntu dan PM2.",
+    "Portofolio profesional Danendra Athallah Indiarto - Junior Backend Developer yang berfokus pada perancangan RESTful API, pengelolaan database MySQL & PostgreSQL di dalam Docker, Directus, Node-RED, serta manajemen server Linux Ubuntu dan PM2.",
   applicationName: "Danendra Athallah Indiarto Portfolio",
   authors: [{ name: "Danendra Athallah Indiarto", url: siteUrl }],
   creator: "Danendra Athallah Indiarto",
@@ -50,6 +50,10 @@ export const metadata: Metadata = {
     "Node.js Developer",
     "Express.js Developer",
     "NestJS Developer",
+    "PostgreSQL Docker",
+    "Docker",
+    "Directus",
+    "Node-RED",
     "MySQL Database",
     "RESTful API",
     "Linux Ubuntu Server",
@@ -152,7 +156,11 @@ export default function RootLayout({
           "Node.js",
           "NestJS",
           "Express.js",
+          "PostgreSQL",
           "MySQL",
+          "Docker",
+          "Directus",
+          "Node-RED",
           "RESTful API",
           "Linux Ubuntu",
           "PM2",
@@ -183,13 +191,18 @@ export default function RootLayout({
     ],
   };
 
+  const themeInitScript = `(function(){try{var saved=localStorage.getItem('portfolio_theme');var theme=saved==='light'||saved==='dark'?saved:(window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.dataset.theme=theme;document.documentElement.classList.toggle('dark',theme==='dark');}catch(e){document.documentElement.dataset.theme='dark';document.documentElement.classList.add('dark');}})();`;
+
   return (
     <html
       lang="id"
+      data-theme="dark"
       data-scroll-behavior="smooth"
+      suppressHydrationWarning
       className={`${plusJakartaSans.variable} ${jetbrainsMono.variable} scroll-smooth dark`}
     >
       <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -197,14 +210,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-screen bg-[#070b12] text-slate-100 font-sans antialiased selection:bg-emerald-500/30 selection:text-emerald-300">
-        <div className="fixed inset-0 pointer-events-none z-0">
-          {/* Subtle Cyber Grid & Ambient Glows */}
-          <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px] opacity-25" />
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute top-1/3 right-10 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-1/4 left-10 w-96 h-96 bg-cyan-500/8 rounded-full blur-3xl pointer-events-none" />
-        </div>
+      <body className="min-h-screen font-sans antialiased selection:bg-indigo-500/25 selection:text-indigo-400">
         <div className="relative z-10 flex flex-col min-h-screen">
           {children}
         </div>
